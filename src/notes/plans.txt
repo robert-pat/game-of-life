@@ -1,0 +1,24 @@
+# Plans of what to add:
+-- 1. move game control to new file (?)
+  a) maybe just refactor a little
+  b) how do other rust ppl do this
+  c) kinda feels like its getting cramped --
+
+--2. move setup to a function call--
+
+--3. add a loop for terminal controls
+  a) Set specific cells to living or dead
+  b) Run n iterations of the board
+  c) Print out the current board --
+
+4. ability to run commands at the same time, eg "p 1,1" as one cmd
+  a) probably involved re-doing the main loop
+  b) idk what kind of parsing to do here
+
+--5. Handle errors in int parsing; the unwrap() function --
+
+--6. move string coordinate parsing to regex, (easier to handle parsing errors ?) --
+
+7. Add the ability to read coordinates from a file instead of only typing them
+
+8. Condense sub-menus

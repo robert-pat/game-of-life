@@ -1,0 +1,25 @@
+Old string parsing code (from parse_string_to_coordinates() ):
+/*
+for s in input.trim().split(" "){
+        let nums: Vec<&str> = s.trim().split(",").collect();
+        cells.push((
+            match nums[0].parse(){
+                Ok(t) => t,
+                Err(_) => {eprintln!("Issue Parsing Coordinate"); 0}
+            },
+            match nums[1].parse(){
+                Ok(t) => t,
+                Err(_) => {eprintln!("Issue Parsing Coordinate"); 0}
+            }
+        ));
+    }
+*/
+
+
+{
+        let mut c = 0;
+        for row in &constructed_board{
+            if row.len() > c {c = row.len();}
+        }
+        c
+    }
