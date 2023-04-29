@@ -4,3 +4,6 @@ output.txt
 glider.txt
 input.txt
 test.txt
+
+/.idea
+.idea/*
