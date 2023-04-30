@@ -15,6 +15,7 @@ pub enum Status{
     Dead
 }
 impl Status{
+    /// Converts a Status into its character representation
     pub fn to_char(&self)-> char{
         match self{
             Status::Alive => ALIVE_STATUS_CHARACTER,
@@ -29,18 +30,22 @@ impl std::fmt::Debug for Status{
 }
 
 impl Board{
+    /// Gets the Status of a specific cell on the board
     pub fn get(&self, x: usize, y: usize)->Status{
         let mut x_ = x % self.x_max;
         let mut y_ = y % self.y_max;
         return self.space[y_][x_];
     }
 
+    /// Sets the Status of a specific cell on the board
     pub fn set(&mut self, x: usize, y: usize, value: Status){
         let mut x_ = x % self.x_max;
         let mut y_ = y % self.y_max;
         self.space[y_][x_] = value;
     }
 
+    /// Creates a new board with the specified dimentions.
+    /// This function also fills in the board to be the specific size
     pub fn new(x: usize, y: usize)-> Self{
         let mut collection = vec![vec![Status::Dead; x]; y];
 
@@ -53,7 +58,7 @@ impl Board{
         return game_board;
     }
 
-///Returns whether the board has any Alive cells in it
+    ///Returns whether the board has any Alive cells in it
     pub fn has_alive_cells(&self) -> bool{
         for row in &self.space{
             for cell in row{
@@ -135,14 +140,13 @@ fn update_board(old_board: &Board)->Board{
                 else {
                     new_board.set(x, y, Status::Dead)
                 }
-                continue;
             }
-            // set the next state from the current number of neighbors
-            match num_alive_neighbors(&new_board, x, y){
-                0 | 1 => new_board.set(x, y, Status::Dead),
-                2 | 3 => new_board.set(x, y, Status::Alive),
-                4| 5| 6| 7| 8| 9 => new_board.set(x, y, Status::Dead),
-                _ => println!("Error matching cell neighbor count")
+            else{
+                // set the next state from the current number of neighbors
+                match num_alive_neighbors(&new_board, x, y){
+                    2 | 3 => new_board.set(x, y, Status::Alive),
+                    _ => new_board.set(x, y, Status::Dead)
+                }
             }
         }
     }

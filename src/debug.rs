@@ -3,7 +3,9 @@ use std::io::Write;
 
 use crate::game;
 use crate::cust_io;
+// TODO: convert the functions in this file to run as optional tests
 
+/// Test code to ensure file I/O works correctly
 pub fn file_io_test(){
     let mut board = game::Board::new(10, 10);
     let cells = vec!((0,0),(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9));
@@ -18,6 +20,7 @@ pub fn file_io_test(){
     println!("Here is the loaded board:\n{}", loaded_board);
 }
 
+// Test code to ensure overwriting of previous boards works correctly
 pub fn line_rewriting_test(){
     let mut std_out = std::io::stdout();
     print!("Here is a line.");
@@ -27,6 +30,7 @@ pub fn line_rewriting_test(){
     std_out.flush();
 }
 
+/// Test code to ensure converting wiki boards to save files works correctly
 pub fn file_convert_test(){
     cust_io::convert_wiki_to_board("test.txt");
 }

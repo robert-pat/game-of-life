@@ -43,6 +43,9 @@ pub fn debug_main(){
     debug::file_convert_test();
 }
 
+// TODO: modify this function to remove the extra asking step: use coords if coords are typed & file otherwise
+/// Gets a Vec<(usize, usize)> of cells to change from the user.
+/// It will prompt them to type or read from a file.
 pub fn promt_user_to_change_cells(std_in: &std::io::Stdin) -> Vec<(usize, usize)>{
     println!("Would you like to (t)ype in corodinates or (r)ead from a file?");
 
@@ -64,6 +67,7 @@ pub fn promt_user_to_change_cells(std_in: &std::io::Stdin) -> Vec<(usize, usize)
     }
 }
 
+/// Prints the board to the terminal, replacing previous text if replace_prev is true
 pub fn display_next_iteratrion(board: &game::Board, std_out: &mut std::io::Stdout, replace_prev: bool, gen: usize){
     if(replace_prev){
         for _ in 0..=board.y_max{

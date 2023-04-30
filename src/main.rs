@@ -13,6 +13,7 @@ const ALIVE_STATUS_CHARACTER: char = '☑';
 const DEAD_STATUS_CHARACTER: char = '☒';
 
 fn main() {
+    // Set a manual exit handler, so the panic error doesn't show up when the program is quit
     ctrlc::set_handler(|| {std::process::exit(0);});
     if false {menu::debug_main(); return;} // Whether the program is in debug mode
 
@@ -28,6 +29,7 @@ fn main() {
         let choice = cust_io::get_user_choice(&std_in);
 
         match choice{
+            // Simulate the next n iterations of the board, whatever the user specifies
             cust_io::Action::Simulation => board = game::run_iterations(&board, cust_io::get_user_number(&std_in)),
 
             cust_io::Action::GrowCell => {
@@ -38,6 +40,8 @@ fn main() {
                 game::set_cells(&mut board, menu::promt_user_to_change_cells(&std_in), game::Status::Dead);
             },
 
+            // Continuously update the simulation, displaying each iteration untill all the cells are dead
+            // This command is akin to pressing "play" on a video
             cust_io::Action::Play => {
                 println!("The sim will run untill all cells are dead, use ^C to stop.");
                 let mut count: usize = 0;
