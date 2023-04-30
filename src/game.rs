@@ -52,6 +52,18 @@ impl Board{
           
         return game_board;
     }
+
+///Returns whether the board has any Alive cells in it
+    pub fn has_alive_cells(&self) -> bool{
+        for row in &self.space{
+            for cell in row{
+                if matches!(Status::Alive, cell){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }
 impl std::fmt::Display for Board{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>)-> std::fmt::Result{

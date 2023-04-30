@@ -39,14 +39,16 @@ fn main() {
             },
 
             cust_io::Action::Play => {
-                println!("The sim will run forever, use ^C to stop.");
+                println!("The sim will run untill all cells are dead, use ^C to stop.");
                 let mut count: usize = 0;
                 loop{
                     menu::display_next_iteratrion(&board, &mut std_out, {count > 0}, count);
                     board = game::run_iterations(&board, 1);
                     count += 1;
                     std::thread::sleep(std::time::Duration::from_millis(250));
+                    if !board.has_alive_cells(){ break;}
                 }
+                break;
             },
 
             cust_io::Action::Save => {
