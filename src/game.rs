@@ -62,8 +62,9 @@ impl Board{
     pub fn has_alive_cells(&self) -> bool{
         for row in &self.space{
             for cell in row{
-                if matches!(Status::Alive, cell){
-                    return true;
+                match cell{
+                    Status::Alive => return true,
+                    _ => {}
                 }
             }
         }

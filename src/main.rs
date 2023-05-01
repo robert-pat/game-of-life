@@ -27,7 +27,7 @@ fn main() {
     loop{
         println!("Options: (s)im. n iterations, (g)row cells, (k)ill cells, (p)rint the board, (l)et the sim. run, sa(v)e the board, (q)uit/(c)ancel");
         let choice = cust_io::get_user_choice(&std_in);
-
+        
         match choice{
             // Simulate the next n iterations of the board, whatever the user specifies
             cust_io::Action::Simulation => board = game::run_iterations(&board, cust_io::get_user_number(&std_in)),
