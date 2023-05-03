@@ -139,7 +139,8 @@ pub fn load_board_from_file(path: String)-> game::Board{
             constructed_row.push(match s{
                 ALIVE_STATUS_CHARACTER => game::Status::Alive,
                 DEAD_STATUS_CHARACTER => game::Status::Dead,
-                _ => {eprintln!("Error parsing char from file: [{}]", s); game::Status::Dead}
+                // Char parsing error won't push anything to the row
+                _ => {eprintln!("Error parsing char from file: [{}]", s); continue;}
             });
         }
         constructed_board.push(constructed_row);

@@ -34,3 +34,35 @@ pub fn line_rewriting_test(){
 pub fn file_convert_test(){
     cust_io::convert_wiki_to_board("test.txt");
 }
+
+/// Test the neighboring cell code
+pub fn find_neighbors_test(){
+    println!("Pipe this to a text file, it'll be easier to verify");
+    println!("Neighbors test 1");
+    let board = game::Board::new(5, 5);
+    for y in 0..=board.y_max{
+        for x in 0..=board.x_max{
+            let neighbors = game::get_neighbors(&board, x, y);
+            println!("({}, {}) --> {:?}", x, y, neighbors);
+        }
+    }
+}
+
+pub fn rand_find_neighbors_test(){
+    println!("Neighbors test 2");
+    let board = game::Board::new(5, 5);
+    let cells = vec![
+        (0,0),
+        (0, board.y_max),
+        (board.x_max, 0),
+        (board.x_max, board.y_max),
+        (2, 3),
+        (0, 3),
+        (3, 0),
+        (1, 1),
+    ];
+
+    for c in cells{
+        println!("({}, {}) --> {:?}", c.0, c.1, game::get_neighbors(&board, c.0, c.1));
+    }
+}
