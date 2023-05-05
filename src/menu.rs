@@ -35,12 +35,8 @@ pub fn initial_game_setup(x:usize, y:usize, std_in: &std::io::Stdin) -> game::Bo
 }
 
 pub fn debug_main(){
-    println!("Running in Debug!");
-
-    //println!("Line Rewriting Test: ------");
-    //debug::line_rewriting_test();
-
-    debug::file_convert_test();
+    println!("Running in Debug! (Flag \"-d\" was passed)");
+    debug::find_neighbors_test();
 }
 
 // TODO: modify this function to remove the extra asking step: use coords if coords are typed & file otherwise

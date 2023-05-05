@@ -15,7 +15,18 @@ const DEAD_STATUS_CHARACTER: char = '☒';
 fn main() {
     // Set a manual exit handler, so the panic error doesn't show up when the program is quit
     ctrlc::set_handler(|| {std::process::exit(0);});
-    if false {menu::debug_main(); return;} // Whether the program is in debug mode
+
+    // Whether the program is in debug mode
+    let args = std::env::args();
+    for a in args{
+        match a.as_str(){
+            "-d" => {
+                menu::debug_main();
+                return;
+            },
+            _ => {}
+        }
+    }
 
     let mut board = game::Board::new(GAME_X, GAME_Y); // Create the program's board
     let std_in = std::io::stdin();
