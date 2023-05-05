@@ -57,7 +57,7 @@ pub fn promt_user_to_change_cells(std_in: &std::io::Stdin) -> Vec<(usize, usize)
             return cust_io::read_file_coordinates(input.trim().to_string());
         },
         _ => {
-            eprintln!("Failed to parse.");
+            eprintln!("Neither Option Selected.");
             return Vec::new();
         }
     }
