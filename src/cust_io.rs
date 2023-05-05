@@ -62,11 +62,11 @@ pub fn get_user_number(std_in: &std::io::Stdin)->usize{
     println!("Please enter a number:");
     std_in.read_line(&mut input);
 
-    match input.trim().parse(){
-        Ok(num) => return num,
+    return match input.trim().parse() {
+        Ok(num) => num,
         Err(_) => {
             eprintln!("Couldn't parse number");
-            return 0;
+            0
         }
     }
 }
@@ -76,28 +76,27 @@ pub fn get_user_number(std_in: &std::io::Stdin)->usize{
 pub fn get_user_choice(std_in: &std::io::Stdin)-> Action{
     let mut input: String = String::new();
     std_in.read_line(&mut input);
-    
-    match input.trim() {
-        "s" => return Action::Simulation,
-        "p" => return Action::PrintBoard,
-        "g" => return Action::GrowCell,
-        "k" => return Action::KillCell,
-        "q" | "c" => return Action::Cancel,
-        "l" => return Action::Play,
-        "v" => return Action::Save,
-        _   => return Action::Failed
+
+    return match input.trim() {
+        "s" => Action::Simulation,
+        "p" => Action::PrintBoard,
+        "g" => Action::GrowCell,
+        "k" => Action::KillCell,
+        "q" | "c" => Action::Cancel,
+        "l" => Action::Play,
+        "v" => Action::Save,
+        _ => Action::Failed
     }
-    return Action::Failed;
 }
 
 /// Reads a list of coordinates from a file.
 /// Parses in the same style as cust_io::get_user_coordinate_vec
 pub fn read_file_coordinates(path: String) -> Vec<(usize, usize)>{
-    match std::fs::read_to_string(path) {
-        Ok(contents) => return parse_string_to_coordinates(contents),
+    return match std::fs::read_to_string(path) {
+        Ok(contents) => parse_string_to_coordinates(contents),
         Err(_) => {
             eprintln!("Failed to read coordinates from file!");
-            return Vec::new();
+            Vec::new()
         }
     }
 }
@@ -183,7 +182,7 @@ pub fn convert_wiki_to_board(path: &str) -> game::Board{
         x = 0;
         for c in row.chars(){
             match c{
-                '.' => board.set(x, y, game::Status::Dead), // Technically unnessecary bc cells default dead
+                '.' => board.set(x, y, game::Status::Dead), // Technically unnecessary bc cells default dead
                 'O' => board.set(x, y, game::Status::Alive),
                 _ => {}
             }

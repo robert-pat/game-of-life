@@ -44,20 +44,20 @@ fn main() {
             cust_io::Action::Simulation => board = game::run_iterations(&board, cust_io::get_user_number(&std_in)),
 
             cust_io::Action::GrowCell => {
-                game::set_cells(&mut board, menu::promt_user_to_change_cells(&std_in), game::Status::Alive);
+                game::set_cells(&mut board, menu::prompt_user_to_change_cells(&std_in), game::Status::Alive);
             },
 
             cust_io::Action::KillCell => {
-                game::set_cells(&mut board, menu::promt_user_to_change_cells(&std_in), game::Status::Dead);
+                game::set_cells(&mut board, menu::prompt_user_to_change_cells(&std_in), game::Status::Dead);
             },
 
             // Continuously update the simulation, displaying each iteration untill all the cells are dead
             // This command is akin to pressing "play" on a video
             cust_io::Action::Play => {
-                println!("The sim will run untill all cells are dead, use ^C to stop.");
+                println!("The sim will run until all cells are dead, use ^C to stop.");
                 let mut count: usize = 0;
                 loop{
-                    menu::display_next_iteratrion(&board, &mut std_out, {count > 0}, count);
+                    menu::display_next_iteration(&board, &mut std_out, {count > 0}, count);
                     board = game::run_iterations(&board, 1);
                     count += 1;
                     std::thread::sleep(std::time::Duration::from_millis(250));
