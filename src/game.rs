@@ -1,6 +1,6 @@
 use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER};
 
-/// Represents a Game of Life board and its dimentions
+/// Represents a Game of Life board and its dimensions
 #[derive(Clone)]
 pub struct Board{
     pub space: Vec<Vec<Status>>,
@@ -32,19 +32,19 @@ impl std::fmt::Debug for Status{
 impl Board{
     /// Gets the Status of a specific cell on the board
     pub fn get(&self, x: usize, y: usize)->Status{
-        let mut x_ = x % self.x_max;
-        let mut y_ = y % self.y_max;
+        let x_ = x % self.x_max;
+        let y_ = y % self.y_max;
         return self.space[y_][x_];
     }
 
     /// Sets the Status of a specific cell on the board
     pub fn set(&mut self, x: usize, y: usize, value: Status){
-        let mut x_ = x % self.x_max;
-        let mut y_ = y % self.y_max;
+        let x_ = x % self.x_max;
+        let y_ = y % self.y_max;
         self.space[y_][x_] = value;
     }
 
-    /// Creates a new board with the specified dimentions.
+    /// Creates a new board with the specified dimensions.
     /// This function also fills in the board to be the specific size
     pub fn new(x: usize, y: usize)-> Self{
         let mut collection = vec![vec![Status::Dead; x]; y];
@@ -84,7 +84,7 @@ impl std::fmt::Display for Board{
     }
 }
 
-/// Returs a vector of tuples containing the coordinates of all the given cell's neighbors
+/// Returns a vector of tuples containing the coordinates of all the given cell's neighbors
 pub fn get_neighbors(board: &Board, x: usize, y: usize) -> Vec<(usize, usize)>{
     let mut result: Vec<(usize, usize)> = Vec::new();
     // Have to check for the zero conditions b/c usize can't be negative; panics if 0 - 1
@@ -123,7 +123,7 @@ pub fn get_neighbors(board: &Board, x: usize, y: usize) -> Vec<(usize, usize)>{
     return result;
 }
 
-/// Returns the next iteration of the given board, w/ the same dimentions
+/// Returns the next iteration of the given board, w/ the same dimensions
 fn update_board(old_board: &Board)->Board{
     let mut new_board = Board::new(old_board.x_max, old_board.y_max);
 
