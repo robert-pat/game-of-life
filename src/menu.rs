@@ -7,10 +7,10 @@ use crate::cust_io;
 use crate::game;
 use crate::debug;
 
-pub fn initial_game_setup(x:usize, y:usize, std_in: &std::io::Stdin) -> game::Board{
+pub fn initial_game_setup(x:usize, y:usize, std_in: &std::io::Stdin) -> game::GameBoard {
     println!("Would you like to (s)tart normally or (l)oad from a file? You can press enter to start normally.");
 
-    let mut new_board = game::Board::new(x, y);
+    let mut new_board = game::GameBoard::new(x, y);
 
     let mut input: String = String::new();
     std_in.read_line(&mut input);
@@ -64,7 +64,7 @@ pub fn prompt_user_to_change_cells(std_in: &std::io::Stdin) -> Vec<(usize, usize
 }
 
 /// Prints the board to the terminal, replacing previous text if replace_prev is true
-pub fn display_next_iteration(board: &game::Board, std_out: &mut std::io::Stdout, replace_prev: bool, gen: usize){
+pub fn display_next_iteration(board: &game::GameBoard, std_out: &mut std::io::Stdout, replace_prev: bool, gen: usize){
     if replace_prev {
         for _ in 0..=board.y_max{
             print!("{}", ansi_escapes::CursorPrevLine);

@@ -102,7 +102,7 @@ pub fn read_file_coordinates(path: String) -> Vec<(usize, usize)>{
 }
 /// Writes the given game board to the specified file.
 /// This will replace the file if it already exists
-pub fn save_board_to_file(path: &str, board: game::Board){
+pub fn save_board_to_file(path: &str, board: game::GameBoard){
     let mut contents: String = String::new();
     let space: Vec<Vec<game::Status>> = board.space;
     //TODO: rework this to avoid the pop() calls
@@ -122,13 +122,13 @@ pub fn save_board_to_file(path: &str, board: game::Board){
 /// Loads a game board from a file.
 /// If the file is improperly formatted, it will return an empty board.
 /// Failing to load the board is logged to std err
-pub fn load_board_from_file(path: String)-> game::Board{
+pub fn load_board_from_file(path: String)-> game::GameBoard {
     let mut constructed_board: Vec<Vec<game::Status>> = Vec::new(); 
     let mut contents = match std::fs::read_to_string(path){
         Ok(contents) => contents,
         Err(_) => {
             eprintln!("Failed to load board from file");
-            return game::Board::new(GAME_X, GAME_Y);
+            return game::GameBoard::new(GAME_X, GAME_Y);
         }
     };
 
@@ -147,7 +147,7 @@ pub fn load_board_from_file(path: String)-> game::Board{
 
     let x = constructed_board[0].len();
     let y = constructed_board.len();
-    return game::Board{
+    return game::GameBoard {
         space: constructed_board,
         x_max: x,
         y_max: y
@@ -155,7 +155,7 @@ pub fn load_board_from_file(path: String)-> game::Board{
 }
 
 /// Converts a raw text board from conwaylife.com into internal game representation
-pub fn convert_wiki_to_board(path: &str) -> game::Board{
+pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
     // Load the text from the file
     let mut file = match std::fs::read_to_string(path){
         Ok(contents) => contents,
@@ -174,7 +174,7 @@ pub fn convert_wiki_to_board(path: &str) -> game::Board{
         } 
     }
 
-    let mut board = game::Board::new(x_max, file.split("\n").count());
+    let mut board = game::GameBoard::new(x_max, file.split("\n").count());
     let mut x = 0; let mut y = 0;
 
     //Have to do the same thing bc cant borrow iterator in for loop (I think?)

@@ -28,7 +28,7 @@ fn main() {
         }
     }
 
-    let mut board = game::Board::new(GAME_X, GAME_Y); // Create the program's board
+    let mut board = game::GameBoard::new(GAME_X, GAME_Y); // Create the program's board
     let std_in = std::io::stdin();
     let mut std_out = std::io::stdout();
 

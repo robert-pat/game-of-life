@@ -7,7 +7,7 @@ use crate::cust_io;
 
 /// Test code to ensure file I/O works correctly
 pub fn file_io_test(){
-    let mut board = game::Board::new(10, 10);
+    let mut board = game::GameBoard::new(10, 10);
     let cells = vec!((0,0),(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9));
     game::set_cells(&mut board, cells, game::Status::Alive);
 
@@ -39,7 +39,7 @@ pub fn file_convert_test(){
 pub fn find_neighbors_test(){
     println!("Pipe this to a text file, it'll be easier to verify");
     println!("Neighbors test 1");
-    let board = game::Board::new(5, 5);
+    let board = game::GameBoard::new(5, 5);
     for y in 0..=board.y_max{
         for x in 0..=board.x_max{
             let neighbors = game::get_neighbors(&board, x, y);
@@ -50,7 +50,7 @@ pub fn find_neighbors_test(){
 
 pub fn rand_find_neighbors_test(){
     println!("Neighbors test 2");
-    let board = game::Board::new(5, 5);
+    let board = game::GameBoard::new(5, 5);
     let cells = vec![
         (0,0),
         (0, board.y_max),

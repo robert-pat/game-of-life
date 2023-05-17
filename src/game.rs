@@ -2,13 +2,13 @@ use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER};
 
 /// Represents a Game of Life board and its dimensions
 #[derive(Clone)]
-pub struct Board{
+pub struct GameBoard {
     pub space: Vec<Vec<Status>>,
     pub x_max: usize,
     pub y_max: usize
 }
 
-/// Holds the posible states each cell can have
+/// Holds the possible states each cell can have
 #[derive(Clone, Copy)]
 pub enum Status{
     Alive,
@@ -25,11 +25,11 @@ impl Status{
 }
 impl std::fmt::Debug for Status{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>)->std::fmt::Result{
-        write!(f, "{}", if matches!(self, Status::Dead) {DEAD_STATUS_CHARACTER} else{ALIVE_STATUS_CHARACTER})
+        write!(f, "{}",  match self{Status::Dead => DEAD_STATUS_CHARACTER, Status::Alive => ALIVE_STATUS_CHARACTER})
     }
 }
 
-impl Board{
+impl GameBoard {
     /// Gets the Status of a specific cell on the board
     pub fn get(&self, x: usize, y: usize)->Status{
         let x_ = x % self.x_max;
@@ -47,15 +47,11 @@ impl Board{
     /// Creates a new board with the specified dimensions.
     /// This function also fills in the board to be the specific size
     pub fn new(x: usize, y: usize)-> Self{
-        let mut collection = vec![vec![Status::Dead; x]; y];
-
-        let mut game_board = Board{
-            space: collection,
+        Self{
+            space: vec![vec![Status::Dead; x]; y],
             x_max: x,
             y_max: y
-        };
-          
-        return game_board;
+        }
     }
 
     ///Returns whether the board has any Alive cells in it
@@ -71,7 +67,7 @@ impl Board{
         return false;
     }
 }
-impl std::fmt::Display for Board{
+impl std::fmt::Display for GameBoard {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>)-> std::fmt::Result{
         let mut s: String = String::new();
 
@@ -85,7 +81,7 @@ impl std::fmt::Display for Board{
 }
 
 /// Returns a vector of tuples containing the coordinates of all the given cell's neighbors
-pub fn get_neighbors(board: &Board, x: usize, y: usize) -> Vec<(usize, usize)>{
+pub fn get_neighbors(board: &GameBoard, x: usize, y: usize) -> Vec<(usize, usize)>{
     let mut result: Vec<(usize, usize)> = Vec::new();
     // Have to check for the zero conditions b/c usize can't be negative; panics if 0 - 1
     if x == 0 && y == 0{ //Origin cell
@@ -124,8 +120,8 @@ pub fn get_neighbors(board: &Board, x: usize, y: usize) -> Vec<(usize, usize)>{
 }
 
 /// Returns the next iteration of the given board, w/ the same dimensions
-fn update_board(old_board: &Board)->Board{
-    let mut new_board = Board::new(old_board.x_max, old_board.y_max);
+fn update_board(old_board: &GameBoard) -> GameBoard {
+    let mut new_board = GameBoard::new(old_board.x_max, old_board.y_max);
 
     for y in 0..=old_board.y_max{
         for x in 0..=old_board.x_max{
@@ -152,7 +148,7 @@ fn update_board(old_board: &Board)->Board{
 }
 
 /// Counts the number of living neighbors a given cell has; as a usize
-pub fn num_alive_neighbors(board: &Board, x: usize, y: usize) -> usize{
+pub fn num_alive_neighbors(board: &GameBoard, x: usize, y: usize) -> usize{
     let mut count: usize = 0;
     for cell in get_neighbors(&board, x, y){ // Loop through neighbor cells
         match board.get(cell.0, cell.1){
@@ -163,14 +159,14 @@ pub fn num_alive_neighbors(board: &Board, x: usize, y: usize) -> usize{
     return count;
 }
 
-pub fn set_cells(board: &mut Board, cells_to_change: Vec<(usize, usize)>, status: Status){
+pub fn set_cells(board: &mut GameBoard, cells_to_change: Vec<(usize, usize)>, status: Status){
     for s in cells_to_change{
         board.set(s.0, s.1, status);
     }
 }
 
-pub fn run_iterations(board: &Board, n: usize) -> Board{
-    let mut new_board: Board = board.clone();
+pub fn run_iterations(board: &GameBoard, n: usize) -> GameBoard {
+    let mut new_board: GameBoard = board.clone();
     for _ in 0..n{
         new_board = update_board(&new_board);
     }
