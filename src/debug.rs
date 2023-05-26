@@ -5,6 +5,7 @@ use crate::{game, GAME_X, GAME_Y};
 use crate::user_io;
 // TODO: convert the functions in this file to run as optional tests
 
+#[derive(Debug)]
 pub enum TestFailure{
     SavingLoading,
     WrongNeighborCount,

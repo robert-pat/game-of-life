@@ -40,6 +40,12 @@ fn main() {
     let mode: ProgramMode = get_app_mode();
     match mode{
         ProgramMode::Debug => {
+            println!("Running Tests");
+            match menu::run_tests(){
+                Ok(_) => println!("Tests Passed"),
+                Err(e) => eprintln!("Test Failed!, {:?}", e)
+            }
+
             println!("Debug Mode Running..");
             menu::run_debug();
         },
