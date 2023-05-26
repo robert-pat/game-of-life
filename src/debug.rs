@@ -1,44 +1,51 @@
-use std::io;
+#![allow(unused)]
 use std::io::Write;
 
-use crate::game;
-use crate::cust_io;
+use crate::{game, GAME_X, GAME_Y};
+use crate::user_io;
 // TODO: convert the functions in this file to run as optional tests
 
+pub enum TestFailure{
+    SavingLoading,
+    WrongNeighborCount,
+    WrongNeighbors
+}
+
 /// Test code to ensure file I/O works correctly
-pub fn file_io_test(){
+pub fn file_io_test() -> Result<(), TestFailure>{
     let mut board = game::GameBoard::new(10, 10);
-    let cells = vec!((0,0),(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9));
-    game::set_cells(&mut board, cells, game::Status::Alive);
+    let cells = vec![(0,0),(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9)];
+    board.set_cells(cells, game::CellStatus::Alive);
+    user_io::save_board_to_file("output.txt", &board);
 
-    println!("Here is the existing board:\n{}", board);
-    println!("It will be saved to: output.txt");
-
-    cust_io::save_board_to_file("output.txt", board);
-    let loaded_board = cust_io::load_board_from_file("output.txt".to_string());
-
-    println!("Here is the loaded board:\n{}", loaded_board);
+    let loaded_board = user_io::load_board_from_file("output.txt".to_string());
+    if board == loaded_board{
+        Ok(())
+    }
+    else{
+        Err(TestFailure::SavingLoading)
+    }
 }
 
 // Test code to ensure overwriting of previous boards works correctly
-pub fn line_rewriting_test(){
+pub fn line_rewriting_demo(){
     let mut std_out = std::io::stdout();
     print!("Here is a line.");
-    std_out.flush();
+    std_out.flush().expect("Couldn't flush stdOut");
     print!("\r");
     print!("Here is the line rewritten!");
-    std_out.flush();
+    std_out.flush().expect("Couldn't flush stdOut");
 }
 
 /// Test code to ensure converting wiki boards to save files works correctly
-pub fn file_convert_test(){
-    cust_io::convert_wiki_to_board("test.txt");
+fn file_convert_test() -> Result<(), TestFailure>{
+    //TODO: have an actual test here; need an example board that's already converted
+    user_io::convert_wiki_to_board("test.txt");
+    Ok(())
 }
 
 /// Test the neighboring cell code
-pub fn find_neighbors_test(){
-    println!("Pipe this to a text file, it'll be easier to verify");
-    println!("Neighbors test 1");
+pub fn print_all_raw_neighbors(){
     let board = game::GameBoard::new(5, 5);
     for y in 0..=board.y_max{
         for x in 0..=board.x_max{
@@ -48,7 +55,17 @@ pub fn find_neighbors_test(){
     }
 }
 
-pub fn rand_find_neighbors_test(){
+fn check_all_neighbor_counts() -> Result<(), TestFailure>{
+    let board = game::GameBoard::new(GAME_X, GAME_Y);
+    for y in 0..board.y_max{
+        for x in 0..board.x_max{
+            todo!() // Check count of neighbors: center has 8, corner has 3, edge has 5
+        }
+    }
+    Ok(())
+}
+
+pub fn mini_find_neighbors_test() -> Result<(), TestFailure>{
     println!("Neighbors test 2");
     let board = game::GameBoard::new(5, 5);
     let cells = vec![
@@ -62,7 +79,13 @@ pub fn rand_find_neighbors_test(){
         (1, 1),
     ];
 
-    for c in cells{
-        println!("({}, {}) --> {:?}", c.0, c.1, game::get_neighbors(&board, c.0, c.1));
+    let answers = vec![3, 3, 3, 3, 8, 5, 5, 8];
+
+    for i in 0..cells.len(){
+        let cell = cells[i];
+        if game::get_neighbors(&board, cell.0, cell.1).len() != answers[i]{
+            return Err(TestFailure::WrongNeighborCount);
+        }
     }
+    Ok(())
 }
