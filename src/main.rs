@@ -19,13 +19,12 @@ enum ProgramMode{
 
 fn get_app_mode() -> ProgramMode{
     let mut args = std::env::args();
-    if !args.len() > 1{
+    if args.len() < 1{
         return ProgramMode::CommandLine;
     }
     match args.nth(1).unwrap_or(String::new()).as_str(){
         "-d" => ProgramMode::Debug,
         "-g" => ProgramMode::GUI,
-        "-c" | "-s" | "-n" => ProgramMode::CommandLine,
         _ => ProgramMode::CommandLine
     }
 }
@@ -37,9 +36,9 @@ fn main() {
         Err(_) => eprintln!("Failed to set process exit handler")
     }
 
-    let mode: ProgramMode = get_app_mode();
-    match mode{
+    match get_app_mode(){
         ProgramMode::Debug => {
+            println!("{:?}", std::env::args());
             println!("Running Tests");
             match menu::run_tests(){
                 Ok(_) => println!("Tests Passed"),
@@ -56,5 +55,3 @@ fn main() {
         ProgramMode::GUI => todo!()
     }
 }
-
-
