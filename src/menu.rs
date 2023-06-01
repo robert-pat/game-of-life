@@ -41,7 +41,7 @@ pub fn command_line_control_loop(mut board: game::GameBoard){
             GameAction::Simulation => board = game::run_iterations(&board, user_io::get_user_number(&std_in)),
             GameAction::GrowCell => prompt_user_to_change_cells(&mut board, game::CellStatus::Alive, &std_in),
             GameAction::KillCell => prompt_user_to_change_cells(&mut board, game::CellStatus::Dead, &std_in),
-            
+
             GameAction::Play => { // "Play" the simulation until stopped, or everything dies
                 println!("The sim will run until all cells are dead, use ^C to stop.");
                 let mut count: usize = 0;
