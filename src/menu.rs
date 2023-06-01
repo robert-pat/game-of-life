@@ -39,13 +39,10 @@ pub fn command_line_control_loop(mut board: game::GameBoard){
     loop{
         match user_io::get_user_game_action(&std_in){
             GameAction::Simulation => board = game::run_iterations(&board, user_io::get_user_number(&std_in)),
-
             GameAction::GrowCell => prompt_user_to_change_cells(&mut board, game::CellStatus::Alive, &std_in),
-
             GameAction::KillCell => prompt_user_to_change_cells(&mut board, game::CellStatus::Dead, &std_in),
-
-            // "Play" the simulation until stopped, or everything dies
-            GameAction::Play => {
+            
+            GameAction::Play => { // "Play" the simulation until stopped, or everything dies
                 println!("The sim will run until all cells are dead, use ^C to stop.");
                 let mut count: usize = 0;
                 while !board.has_alive_cells(){
@@ -56,16 +53,7 @@ pub fn command_line_control_loop(mut board: game::GameBoard){
                 }
                 break;
             },
-
-            GameAction::Save => {
-                println!("Where would you like to save the board?");
-                let mut input: String = String::new();
-                std_in.read_line(&mut input).expect("Failed reading stdIn");
-
-                user_io::save_board_to_file(input.trim(), &board);
-                break;
-            },
-
+            GameAction::Save => prompt_user_to_save_board(&board, &std_in),
             GameAction::PrintBoard => {println!("{}", board)},
             GameAction::Quit => break,
             GameAction::Failed => eprintln!("Failed to parse, sorry!")
@@ -73,6 +61,14 @@ pub fn command_line_control_loop(mut board: game::GameBoard){
     }
 }
 
+/// Saves the board to the specified file
+pub fn prompt_user_to_save_board(board: &game::GameBoard, std_in: &std::io::Stdin){
+    println!("Where would you like to save the board?");
+    let mut input: String = String::new();
+    std_in.read_line(&mut input).expect("Failed reading stdIn");
+
+    user_io::save_board_to_file(input.trim(), &board);
+}
 
 /// Prompts a user to pick cells to change on the board & changes them to the specified Status
 /// Allows for both file reading and manually typing in cells
