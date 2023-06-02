@@ -71,6 +71,11 @@ impl GameBoard {
         }
         return false;
     }
+    #[allow(unused)]
+    pub fn reset_max_bounds(&mut self){
+        self.y_max = self.space.len();
+        self.x_max = self.space[0].len();
+    }
 }
 impl std::fmt::Display for GameBoard {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>)-> std::fmt::Result{
