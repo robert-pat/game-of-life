@@ -66,7 +66,8 @@ pub fn mini_find_neighbors_test(){
         assert_eq!(
             game::get_neighbors(&board, cell.0, cell.1).len(),
             answers[i],
-            "({cell.0},{cell.1} failed)"
+            "{:?} failed)",
+            cell
         )
     }
 }
