@@ -6,7 +6,7 @@ pub enum CellStatus {
     Dead
 }
 impl CellStatus {
-    pub fn to_char(&self)-> char{
+    pub fn to_char(self)-> char{
         match self{
             CellStatus::Alive => ALIVE_STATUS_CHARACTER,
             CellStatus::Dead => DEAD_STATUS_CHARACTER
@@ -30,7 +30,7 @@ impl GameBoard {
     pub fn get(&self, x: usize, y: usize)-> CellStatus {
         let x_ = x % self.x_max;
         let y_ = y % self.y_max;
-        return self.space[y_][x_];
+        self.space[y_][x_]
     }
 
     /// Sets the Status of a specific cell on the board
@@ -63,13 +63,10 @@ impl GameBoard {
     pub fn has_alive_cells(&self) -> bool{
         for row in &self.space{
             for cell in row{
-                match cell{
-                    CellStatus::Alive => return true,
-                    _ => {}
-                }
+                if cell == &CellStatus::Alive { return true }
             }
         }
-        return false;
+        false
     }
     #[allow(unused)]
     pub fn reset_max_bounds(&mut self){
@@ -83,7 +80,7 @@ impl std::fmt::Display for GameBoard {
 
         for entry in self.space.iter(){
             s.push_str( format!("{:?}", entry).as_str() );
-            s.push_str("\n");
+            s.push('\n');
         }
 
         write!(f, "{}", s)
@@ -99,7 +96,7 @@ impl PartialEq for GameBoard{
                 if self.space[y][x] != other.space[y][x]{return false;}
             }
         }
-        return true;
+        true
     }
 }
 
@@ -110,7 +107,7 @@ pub fn get_neighbors(board: &GameBoard, x: usize, y: usize) -> Vec<(usize, usize
     // I swear to god this has made me lose interest in this projects at least 3 times
     // I hate it so much
     if x > board.x_max || y > board.y_max {
-        return vec![];
+        vec![]
     }
 
     else if x == 0 && y == 0{
@@ -154,34 +151,33 @@ fn update_board(old_board: &GameBoard) -> GameBoard {
             match old_board.get(x, y){
                 // When the cell is alive, it dies w/o having 2 or 3 neighbors
                 CellStatus::Alive => {
-                    match num_alive_neighbors(&old_board, x, y){
+                    match num_alive_neighbors(old_board, x, y){
                         2 | 3 => new_board.set(x, y, CellStatus::Alive),
                         _ => {} // Cells are dead by default in the new board
                     }
                 },
                 // When the cell is dead, it needs 3 alive neighbors to revive
                 CellStatus::Dead => {
-                    match num_alive_neighbors(&old_board, x, y){
-                        3 => new_board.set(x, y, CellStatus::Alive),
-                        _ => {} // Cells are dead by default in the new board
+                    if num_alive_neighbors(old_board, x, y) == 3 {
+                        new_board.set(x, y, CellStatus::Alive)
                     }
                 }
             }
         }
     }
-    return new_board;
+    new_board
 }
 
 /// Counts the number of living neighbors a given cell has; as a usize
 pub fn num_alive_neighbors(board: &GameBoard, x: usize, y: usize) -> usize{
     let mut count: usize = 0;
-    for cell in get_neighbors(&board, x, y){ // Loop through neighbor cells
+    for cell in get_neighbors(board, x, y){ // Loop through neighbor cells
         match board.get(cell.0, cell.1){
             CellStatus::Alive => count += 1,
             CellStatus::Dead => {}
         }
     }
-    return count;
+    count
 }
 
 /// Returns the board after n iterations
@@ -190,5 +186,5 @@ pub fn run_iterations(board: &GameBoard, n: usize) -> GameBoard {
     for _ in 0..n{
         new_board = update_board(&new_board);
     }
-    return new_board;
+    new_board
 }

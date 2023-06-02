@@ -1,7 +1,5 @@
 use std::io::Write;
 
-use ansi_escapes;
-
 use crate::{user_io, GAME_X, GAME_Y};
 use crate::{game};
 use crate::user_io::GameAction;
@@ -66,7 +64,7 @@ pub fn prompt_user_to_save_board(board: &game::GameBoard, std_in: &std::io::Stdi
     let mut input: String = String::new();
     std_in.read_line(&mut input).expect("Failed reading stdIn");
 
-    user_io::save_board_to_file(input.trim(), &board);
+    user_io::save_board_to_file(input.trim(), board);
 }
 
 /// Prompts a user to pick cells to change on the board & changes them to the specified Status

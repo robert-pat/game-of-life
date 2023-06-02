@@ -20,9 +20,8 @@ pub fn file_io_test() {
 
 #[test]
 fn file_convert_test(){
-    //TODO: have an actual test here; need an example board that's already converted
     user_io::convert_wiki_to_board("test.txt");
-    todo!()
+    todo!() // Need to have an actual test here; need an example board that's already converted
 }
 
 #[test]

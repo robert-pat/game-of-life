@@ -3,8 +3,6 @@ mod user_io;
 mod debug;
 mod menu;
 
-use ctrlc;
-
 const GAME_X: usize = 30;
 const GAME_Y: usize = 30;
 
@@ -14,7 +12,7 @@ const DEAD_STATUS_CHARACTER: char = '✗'; // ☒
 enum ProgramMode{
     CommandLine,
     Testing,
-    GUI
+    Gui
 }
 
 fn get_app_mode() -> ProgramMode{
@@ -24,7 +22,7 @@ fn get_app_mode() -> ProgramMode{
     }
     match args.nth(1).unwrap_or(String::new()).as_str(){
         "-d" => ProgramMode::Testing,
-        "-g" => ProgramMode::GUI,
+        "-g" => ProgramMode::Gui,
         _ => ProgramMode::CommandLine
     }
 }
@@ -47,6 +45,6 @@ fn main() {
             let board = menu::setup_initial_board();
             menu::command_line_control_loop(board);
         }
-        ProgramMode::GUI => todo!()
+        ProgramMode::Gui => todo!()
     }
 }

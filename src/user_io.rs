@@ -22,8 +22,8 @@ pub fn get_user_coordinate(std_in: &std::io::Stdin)->(usize, usize){
     println!("Enter a coordinate of the form: x,y");
     std_in.read_line(&mut input).expect("Failed reading stdIn");
 
-    let nums: Vec<&str> = input.trim().split(",").collect();
-    return (nums[0].parse().unwrap(), nums[1].parse().unwrap()); // TODO: properly handle parsing here
+    let nums: Vec<&str> = input.trim().split(',').collect();
+    (nums[0].parse().unwrap(), nums[1].parse().unwrap()) // TODO: properly handle parsing here
 }
 
 /// Prompts the user for any number of coordinates
@@ -33,7 +33,7 @@ pub fn get_user_coordinate_vec(std_in: &std::io::Stdin)-> Vec<(usize, usize)>{
     println!("Please enter coordinates in the form: x,y x,y x,y ...");
     std_in.read_line(&mut input).expect("Failed reading stdIn");
 
-    return parse_string_to_coordinates(input);
+    parse_string_to_coordinates(input)
 }
 
 /// Parses a given string into a Vec of coordinates, uses regex to match number,number patterns
@@ -47,11 +47,11 @@ pub fn parse_string_to_coordinates(input: String)->Vec<(usize, usize)>{
     }
 
     for c in FILTER.captures_iter(&input){
-        let pair: Vec<_> = c.get(0).unwrap().as_str().split(",").collect();
+        let pair: Vec<_> = c.get(0).unwrap().as_str().split(',').collect();
         cells.push((pair[0].parse().unwrap(), pair[1].parse().unwrap()));
     }
 
-    return cells;
+    cells
 }
 
 /// Prompts the user for a single number
@@ -91,7 +91,7 @@ pub fn get_user_game_action(std_in: &std::io::Stdin) -> GameAction {
 
 /// Reads a list of coordinates from a file.
 pub fn read_file_coordinates(path: &str) -> Vec<(usize, usize)>{
-    return match std::fs::read_to_string(path) {
+    match std::fs::read_to_string(path) {
         Ok(contents) => parse_string_to_coordinates(contents),
         Err(_) => {
             eprintln!("Failed to read coordinates from file!");
@@ -131,7 +131,7 @@ pub fn load_board_from_file(path: String)-> game::GameBoard {
         }
     };
 
-    for row in contents.split("\n"){
+    for row in contents.split('\n'){
         let mut constructed_row: Vec<game::CellStatus> = Vec::new();
         for s in row.chars(){
             constructed_row.push(match s{
@@ -143,7 +143,7 @@ pub fn load_board_from_file(path: String)-> game::GameBoard {
         constructed_board.push(constructed_row);
     }
 
-    return game::GameBoard {
+    game::GameBoard {
         x_max: constructed_board[0].len(),
         y_max: constructed_board.len(),
         space: constructed_board, // last to avoid borrowing after move
@@ -161,7 +161,7 @@ pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
   
     let mut x_max: usize = 0;
     // Loop through each row of the file w/o an "!" in it; ! are comments in the Game of Life Wiki format
-    for row in file.split("\n").filter(|r| {!r.contains("!")}){
+    for row in file.split('\n').filter(|r| {!r.contains('!')}){
         let mut count = 0; // Counting how many cell characters there are in a row
         for c in row.chars(){
             match c {'.'| 'O' => count += 1, _ => {}}
@@ -171,23 +171,20 @@ pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
         } 
     }
 
-    let mut board = game::GameBoard::new(x_max, file.split("\n").count());
+    let mut board = game::GameBoard::new(x_max, file.split('\n').count());
     let mut x = 0; let mut y = 0;
 
-    //Have to do the same thing bc cant borrow iterator in for loop (I think?)
-    for row in file.split("\n").filter(|r| {!r.contains("!")}){
-        x = 0;
-        for c in row.chars(){
+    // Clippy linting did this; idk if it works w/ these changes
+    for (y, row) in file.split('\n').filter(|r| {!r.contains('!')}).enumerate(){
+        for (x, c) in row.chars().enumerate(){
             match c{
                 '.' => board.set(x, y, game::CellStatus::Dead), // Technically unnecessary bc cells default dead
                 'O' => board.set(x, y, game::CellStatus::Alive),
                 _ => {}
             }
-            x += 1;
         }
-        y += 1;
     }
-    return board;
+    board
 }
 
 /// Overwrites a conwaylife.com text board into a game save file
