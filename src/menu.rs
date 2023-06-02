@@ -3,8 +3,7 @@ use std::io::Write;
 use ansi_escapes;
 
 use crate::{user_io, GAME_X, GAME_Y};
-use crate::{game, debug};
-use crate::debug::TestFailure;
+use crate::{game};
 use crate::user_io::GameAction;
 
 pub fn setup_initial_board() -> game::GameBoard {
@@ -99,22 +98,4 @@ pub fn display_next_iteration(board: &game::GameBoard, std_out: &mut std::io::St
     }
     print!("Generation: {gen}\n{board}");
     std_out.flush().expect("Couldn't flush stdOut");
-}
-
-pub fn run_tests() -> Result<(), TestFailure>{
-    match debug::file_io_test() {
-        Ok(_) => {},
-        Err(e) => return Err(e)
-    }
-    match debug::mini_find_neighbors_test() {
-        Ok(_) => {},
-        Err(e) => return Err(e)
-    }
-    Ok(())
-}
-pub fn run_debug(){
-    println!("The following debug functions will run:");
-    println!("line_rewriting_demo()");
-    // Add functions here:
-    debug::line_rewriting_demo();
 }

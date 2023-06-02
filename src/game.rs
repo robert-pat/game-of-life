@@ -99,42 +99,44 @@ impl PartialEq for GameBoard{
 }
 
 /// Returns a vector of tuples containing the coordinates of all the given cell's neighbors
+/// If the given coordinates are outside of the board, it will return an empty vec
 pub fn get_neighbors(board: &GameBoard, x: usize, y: usize) -> Vec<(usize, usize)>{
-    let mut result: Vec<(usize, usize)> = Vec::new();
-    // Have to check for the zero conditions b/c usize can't be negative; panics if 0 - 1
-    if x == 0 && y == 0{ //Origin cell
-        result.push((1, 0));
-        result.push((1, 1));
-        result.push((0, 1));
+    // Number of refactors this function has had: |||||||
+    // I swear to god this has made me lose interest in this projects at least 3 times
+    // I hate it so much
+    if x > board.x_max || y > board.y_max {
+        return vec![];
     }
+
+    else if x == 0 && y == 0{
+        vec![(0, 1), (1, 1), (1, 0)]
+    }
+    else if x == 0 && y == board.y_max{
+        vec![(x, y -1), (x +1, y -1), (x +1, y)]
+    }
+    else if x == board.x_max && y == 0{
+        vec![(x - 1, y), (x - 1, y + 1), (x, y + 1)]
+    }
+    else if x == board.x_max && y == board.y_max{
+        vec![(x - 1, y - 1), (x - 1, y), (x, y - 1)]
+    }
+
     else if x == 0{
-        for _y in (y -1)..=(y +1){
-            for _x in x..=(x +1){
-                if _y == y && _x == x{continue;}
-                if _y > board.y_max || _x >board.x_max{ continue; }
-                result.push((_x, _y));
-            }
-        }
+        vec![(x, y - 1), (x, y + 1), (x + 1, y - 1), (x + 1, y), (x + 1, y + 1)]
+    }
+    else if x == board.x_max{
+        vec![(x - 1, y - 1), (x - 1, y), (x - 1, y + 1), (x, y - 1), (x, y + 1)]
     }
     else if y == 0{
-        for _y in y..=(y +1){
-            for _x in (x -1)..=(x +1){
-                if _y == y && _x == x{continue;}
-                if _y > board.y_max || _x >board.x_max{ continue; }
-                result.push((_x, _y));
-            }
-        }
+        vec![(x - 1, y), (x - 1, y + 1), (x, y + 1), (x + 1, y), (x + 1, y + 1)]
     }
-    else{ // Non zero-bordering cell
-        for _y in (y -1)..=(y+ 1){
-            for _x in (x-1)..=(y +1){
-                if _y == y && _x == x{continue;}
-                if _y > board.y_max || _x >board.x_max{ continue; }
-                result.push((_x, _y));
-            }
-        }
+    else if y == board.y_max{
+        vec![(x - 1, y - 1), (x - 1, y), (x, y - 1), (x + 1, y - 1), (x + 1, y)]
     }
-    return result;
+
+    else{
+        vec![(x - 1, y - 1), (x - 1, y), (x - 1, y + 1), (x, y - 1), (x, y + 1), (x + 1, y - 1), (x + 1, y), (x + 1, y + 1)]
+    }
 }
 
 /// Returns the next iteration of the given board, w/ the same dimensions

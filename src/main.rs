@@ -13,7 +13,7 @@ const DEAD_STATUS_CHARACTER: char = '✗'; // ☒
 
 enum ProgramMode{
     CommandLine,
-    Debug,
+    Testing,
     GUI
 }
 
@@ -23,7 +23,7 @@ fn get_app_mode() -> ProgramMode{
         return ProgramMode::CommandLine;
     }
     match args.nth(1).unwrap_or(String::new()).as_str(){
-        "-d" => ProgramMode::Debug,
+        "-d" => ProgramMode::Testing,
         "-g" => ProgramMode::GUI,
         _ => ProgramMode::CommandLine
     }
@@ -37,16 +37,11 @@ fn main() {
     }
 
     match get_app_mode(){
-        ProgramMode::Debug => {
+        ProgramMode::Testing => {
             println!("{:?}", std::env::args());
-            println!("Running Tests");
-            match menu::run_tests(){
-                Ok(_) => println!("Tests Passed"),
-                Err(e) => eprintln!("Test Failed!, {:?}", e)
-            }
-
-            println!("Debug Mode Running..");
-            menu::run_debug();
+            println!("Test Mode Running-> Line Rewriting, Print all Raw Neighbors");
+            debug::line_rewriting_demo();
+            debug::print_all_raw_neighbors();
         },
         ProgramMode::CommandLine => {
             let board = menu::setup_initial_board();
