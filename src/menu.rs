@@ -29,7 +29,6 @@ pub fn setup_initial_board() -> game::GameBoard {
 
 pub fn command_line_control_loop(mut board: game::GameBoard){
     let std_in = std::io::stdin();
-    let mut std_out = std::io::stdout();
 
     loop{
         match user_io::get_user_game_action(&std_in){
@@ -40,12 +39,13 @@ pub fn command_line_control_loop(mut board: game::GameBoard){
             GameAction::Play => { // "Play" the simulation until stopped, or everything dies
                 println!("The sim will run until all cells are dead, use ^C to stop.");
                 let mut count = 0;
-                while !board.has_alive_cells(){
+                while board.has_alive_cells(){
                     display_next_iteration(&board,count > 0, count);
                     board = game::run_iterations(&board, 1);
                     count += 1;
                     std::thread::sleep(std::time::Duration::from_millis(250));
                 }
+                println!("All Cells died:\n{}", board);
                 break;
             },
             GameAction::Save => prompt_user_to_save_board(&board, &std_in),

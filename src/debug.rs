@@ -71,6 +71,15 @@ pub fn mini_find_neighbors_test(){
     }
 }
 
+#[test]
+pub fn dead_board_test(){
+    let mut board = game::GameBoard::new(10, 10);
+    assert!(!board.has_alive_cells());
+
+    board.set(5, 5, game::CellStatus::Alive);
+    assert!(board.has_alive_cells());
+}
+
 // Test code to ensure overwriting of previous boards works correctly
 pub fn line_rewriting_demo(){
     let mut std_out = std::io::stdout();
