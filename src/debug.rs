@@ -90,3 +90,24 @@ pub fn print_all_raw_neighbors(){
         }
     }
 }
+
+pub fn display_board_rewriting(){
+    let mut board = game::GameBoard::new(10, 10);
+
+    println!("{}", board);
+    for _ in 0..board.y_max{
+        print!("{}", ansi_escapes::CursorPrevLine);
+    }
+
+    std::thread::sleep(std::time::Duration::from_millis(1000));
+
+    let mut vec = Vec::new();
+    for y in 0..board.y_max{
+        for x in 0..board.x_max{
+            vec.push((x,y));
+        }
+    }
+    board.set_cells(vec, game::CellStatus::Alive);
+    print!("{}", board);
+    if std::io::stdout().flush().is_ok() {}
+}

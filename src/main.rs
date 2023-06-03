@@ -12,7 +12,8 @@ const DEAD_STATUS_CHARACTER: char = '✗'; // ☒
 enum ProgramMode{
     CommandLine,
     Testing,
-    Gui
+    Gui,
+    TerminalTest
 }
 
 fn get_app_mode() -> ProgramMode{
@@ -23,6 +24,7 @@ fn get_app_mode() -> ProgramMode{
     match args.nth(1).unwrap_or(String::new()).as_str(){
         "-d" => ProgramMode::Testing,
         "-g" => ProgramMode::Gui,
+        "-t" => ProgramMode::TerminalTest,
         _ => ProgramMode::CommandLine
     }
 }
@@ -45,6 +47,7 @@ fn main() {
             let board = menu::setup_initial_board();
             menu::command_line_control_loop(board);
         }
-        ProgramMode::Gui => todo!()
+        ProgramMode::Gui => todo!(),
+        ProgramMode::TerminalTest => debug::display_board_rewriting()
     }
 }

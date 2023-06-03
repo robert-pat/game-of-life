@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use crate::{user_io, GAME_X, GAME_Y};
 use crate::{game};
 use crate::user_io::GameAction;
@@ -41,9 +39,9 @@ pub fn command_line_control_loop(mut board: game::GameBoard){
 
             GameAction::Play => { // "Play" the simulation until stopped, or everything dies
                 println!("The sim will run until all cells are dead, use ^C to stop.");
-                let mut count: usize = 0;
+                let mut count = 0;
                 while !board.has_alive_cells(){
-                    display_next_iteration(&board, &mut std_out, count > 0, count);
+                    display_next_iteration(&board,count > 0, count);
                     board = game::run_iterations(&board, 1);
                     count += 1;
                     std::thread::sleep(std::time::Duration::from_millis(250));
@@ -88,12 +86,11 @@ pub fn prompt_user_to_change_cells(board: &mut game::GameBoard, status: game::Ce
 }
 
 /// Prints the board to the terminal, replacing previous text if replace_prev is true
-pub fn display_next_iteration(board: &game::GameBoard, std_out: &mut std::io::Stdout, replace_prev: bool, gen: usize){
+pub fn display_next_iteration(board: &game::GameBoard, replace_prev: bool, gen: i32){
     if replace_prev {
         for _ in 0..=board.y_max{
             print!("{}", ansi_escapes::CursorPrevLine);
         }
     }
-    print!("Generation: {gen}\n{board}");
-    std_out.flush().expect("Couldn't flush stdOut");
+    println!("Generation: {gen}\n{board}");
 }

@@ -82,7 +82,7 @@ impl std::fmt::Display for GameBoard {
             s.push_str( format!("{:?}", entry).as_str() );
             s.push('\n');
         }
-
+        s.pop(); //Remove the last trailing new line
         write!(f, "{}", s)
     }
 }
