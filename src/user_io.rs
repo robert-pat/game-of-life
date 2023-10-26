@@ -107,7 +107,7 @@ pub fn save_board_to_file(path: &str, board: &game::GameBoard){
 
     for row in space{
         for cell in row{
-            contents.push(cell.to_char());
+            contents.push(cell.into());
         }
         contents.push('\n');
     }
@@ -121,8 +121,8 @@ pub fn save_board_to_file(path: &str, board: &game::GameBoard){
 /// Loads a game board from a file.
 /// If the file is improperly formatted, it will return an empty board.
 /// Failing to load the board is logged to std err
-pub fn load_board_from_file(path: String)-> game::GameBoard {
-    let mut constructed_board: Vec<Vec<game::CellStatus>> = Vec::new();
+pub fn load_board_from_file(path: &str)-> game::GameBoard {
+    let mut constructed_board: Vec<Vec<game::CellState>> = Vec::new();
     let contents = match std::fs::read_to_string(path){
         Ok(contents) => contents,
         Err(_) => {
@@ -132,11 +132,11 @@ pub fn load_board_from_file(path: String)-> game::GameBoard {
     };
 
     for row in contents.split('\n'){
-        let mut constructed_row: Vec<game::CellStatus> = Vec::new();
+        let mut constructed_row: Vec<game::CellState> = Vec::new();
         for s in row.chars(){
             constructed_row.push(match s{
-                ALIVE_STATUS_CHARACTER => game::CellStatus::Alive,
-                DEAD_STATUS_CHARACTER => game::CellStatus::Dead,
+                ALIVE_STATUS_CHARACTER => game::CellState::Alive,
+                DEAD_STATUS_CHARACTER => game::CellState::Dead,
                 _ => {eprintln!("Error parsing char from file: [{}]", s); continue;} //Don't push anything on error
             });
         }
@@ -178,8 +178,8 @@ pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
     for (y, row) in file.split('\n').filter(|r| {!r.contains('!')}).enumerate(){
         for (x, c) in row.chars().enumerate(){
             match c{
-                '.' => board.set(x, y, game::CellStatus::Dead), // Technically unnecessary bc cells default dead
-                'O' => board.set(x, y, game::CellStatus::Alive),
+                '.' => board.set(x, y, game::CellState::Dead), // Technically unnecessary bc cells default dead
+                'O' => board.set(x, y, game::CellState::Alive),
                 _ => {}
             }
         }

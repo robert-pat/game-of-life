@@ -1,53 +1,44 @@
+use winit::dpi::PhysicalSize;
+
 mod game;
 mod user_io;
 mod debug;
 mod menu;
-
 const GAME_X: usize = 30;
 const GAME_Y: usize = 30;
-
 const ALIVE_STATUS_CHARACTER: char = '✓'; // ☑
 const DEAD_STATUS_CHARACTER: char = '✗'; // ☒
-
 enum ProgramMode{
     CommandLine,
-    Testing,
     Gui,
-    TerminalTest
 }
-
+const DEFAULT_MODE: ProgramMode = ProgramMode::Gui;
 fn get_app_mode() -> ProgramMode{
-    let mut args = std::env::args();
-    if args.len() < 1{
-        return ProgramMode::CommandLine;
-    }
-    match args.nth(1).unwrap_or(String::new()).as_str(){
-        "-d" => ProgramMode::Testing,
-        "-g" => ProgramMode::Gui,
-        "-t" => ProgramMode::TerminalTest,
-        _ => ProgramMode::CommandLine
-    }
+    // TODO: rework this
+    let args = std::env::args();
+    if args.len() < 1 { return ProgramMode::CommandLine; }
+    let mut mode = ProgramMode::CommandLine;
+    args.for_each(|arg| {
+        match arg.as_str(){
+            "-g" => { mode = ProgramMode::Gui; },
+            _ => {}
+        }
+    });
+    mode
 }
-
 fn main() {
     // Set an exit handler, so the panic error doesn't show up when the program is quit
-    match ctrlc::set_handler(|| {std::process::exit(0);}){
-        Ok(_) => {},
-        Err(_) => eprintln!("Failed to set process exit handler")
-    }
+    ctrlc::set_handler(| | {std::process::exit(0); }).expect("Failed to set Handler!");
 
     match get_app_mode(){
-        ProgramMode::Testing => {
-            println!("{:?}", std::env::args());
-            println!("Test Mode Running-> Line Rewriting, Print all Raw Neighbors");
-            debug::line_rewriting_demo();
-            debug::print_all_raw_neighbors();
-        },
         ProgramMode::CommandLine => {
             let board = menu::setup_initial_board();
-            menu::command_line_control_loop(board);
+            menu::run_command_line(board);
         }
-        ProgramMode::Gui => todo!(),
-        ProgramMode::TerminalTest => debug::display_board_rewriting()
+        ProgramMode::Gui => {
+            let size = PhysicalSize::new((GAME_X * 6) as u32, (GAME_Y * 6) as u32);
+            let (pixels, window, event_loop) = menu::gui_init(size);
+            menu::run_gui(event_loop, window, pixels);
+        },
     }
 }

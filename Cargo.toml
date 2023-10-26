@@ -9,4 +9,6 @@ edition = "2021"
 ansi-escapes = "0.1.1"
 ctrlc = "3.2.5"
 lazy_static = "1.4.0"
+pixels = "0.13.0"
 regex = "1.8.1"
+winit = "0.28.6" # going past this version breaks compatability with pixels :(

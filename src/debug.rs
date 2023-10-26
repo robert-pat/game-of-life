@@ -1,5 +1,6 @@
+#[cfg(test)]
 use std::io::Write;
-
+#[cfg(test)]
 use crate::game;
 
 #[cfg(test)]
@@ -11,10 +12,10 @@ use crate::user_io;
 pub fn file_io_test() {
     let mut board = game::GameBoard::new(10, 10);
     let cells = vec![(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9)];
-    board.set_cells(cells, game::CellStatus::Alive);
+    board.set_cells(cells, game::CellState::Alive);
     user_io::save_board_to_file("output.txt", &board);
 
-    let loaded_board = user_io::load_board_from_file("output.txt".to_string());
+    let loaded_board = user_io::load_board_from_file("output.txt");
     assert!(board == loaded_board)
 }
 
@@ -47,18 +48,16 @@ fn check_all_neighbor_counts(){
 #[test]
 pub fn mini_find_neighbors_test(){
     let board = game::GameBoard::new(5, 5);
-    let cells = vec![
-        (0,0),
+    let cells = [(0,0),
         (0, board.y_max),
         (board.x_max, 0),
         (board.x_max, board.y_max),
         (2, 3),
         (0, 3),
         (3, 0),
-        (1, 1),
-    ];
+        (1, 1)];
 
-    let answers = vec![3, 3, 3, 3, 8, 5, 5, 8];
+    let answers = [3, 3, 3, 3, 8, 5, 5, 8];
 
     for i in 0..cells.len(){
         let cell = cells[i];
@@ -76,10 +75,10 @@ pub fn dead_board_test(){
     let mut board = game::GameBoard::new(10, 10);
     assert!(!board.has_alive_cells());
 
-    board.set(5, 5, game::CellStatus::Alive);
+    board.set(5, 5, game::CellState::Alive);
     assert!(board.has_alive_cells());
 }
-
+#[test]
 // Test code to ensure overwriting of previous boards works correctly
 pub fn line_rewriting_demo(){
     let mut std_out = std::io::stdout();
@@ -89,6 +88,7 @@ pub fn line_rewriting_demo(){
     print!("Here is the line rewritten!");
     std_out.flush().expect("Couldn't flush stdOut");
 }
+#[test]
 /// Test the neighboring cell code
 pub fn print_all_raw_neighbors(){
     let board = game::GameBoard::new(5, 5);
@@ -99,7 +99,7 @@ pub fn print_all_raw_neighbors(){
         }
     }
 }
-
+#[test]
 pub fn display_board_rewriting(){
     let mut board = game::GameBoard::new(10, 10);
 
@@ -116,7 +116,7 @@ pub fn display_board_rewriting(){
             vec.push((x,y));
         }
     }
-    board.set_cells(vec, game::CellStatus::Alive);
+    board.set_cells(vec, game::CellState::Alive);
     print!("{}", board);
     if std::io::stdout().flush().is_ok() {}
 }
