@@ -39,8 +39,7 @@ pub(crate) fn run_gui(l: EventLoop<()>, window: Window, mut pixels: Pixels) -> !
 pub fn setup_initial_board() -> game::GameBoard {
     let std_in = std::io::stdin();
 
-    println!("How would you like to start?");
-    println!("(m)anually or (l)oaded from a file? Pressing \"Enter\" starts normally.");
+    println!("Start (m)anually or (l)oad from a file? (\"Enter\" to skip)");
 
     let mut input: String = String::new();
     std_in.read_line(&mut input).expect("Couldn't read stdIn (call1)");

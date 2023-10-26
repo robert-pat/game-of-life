@@ -29,22 +29,16 @@ pub struct GameBoard {
 impl GameBoard {
     /// Gets the Status of a specific cell on the board
     pub fn get(&self, x: usize, y: usize)-> CellState {
-        let _x = x % self.x_max;
-        let _y = y % self.y_max;
-        self.space[_y][_x]
+        self.space[y % self.y_max][x % self.x_max]
     }
     /// Sets the Status of a specific cell on the board
     pub fn set(&mut self, x: usize, y: usize, value: CellState){
-        let x_ = x % self.x_max;
-        let y_ = y % self.y_max;
-        self.space[y_][x_] = value;
+        self.space[y % self.y_max][x % self.x_max] = value;
     }
     /// Sets the Status of the cells on the board
     pub fn set_cells(&mut self, cells: Vec<(usize, usize)>, status: CellState){
         for cell in cells {
-            let x = cell.0 % self.x_max;
-            let y = cell.1 % self.y_max;
-            self.space[y][x] = status;
+            self.space[cell.1 % self.y_max][cell.0 % self.x_max] = status;
         }
     }
     /// Creates a new board with the specified dimensions.
@@ -86,7 +80,6 @@ impl GameBoard {
 impl std::fmt::Display for GameBoard {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>)-> std::fmt::Result{
         let mut s: String = String::new();
-
         for row in self.space.iter(){
             s.push_str( format!("{:?}", row).as_str() );
             s.push('\n');
@@ -98,10 +91,8 @@ impl std::fmt::Display for GameBoard {
 impl PartialEq for GameBoard{
     fn eq(&self, other: &Self) -> bool {
         if self.y_max != other.y_max || self.x_max != other.x_max { return false; }
-        for y in 0..self.y_max{
-            for x in 0..self.x_max{
-                if self.space[y][x] != other.space[y][x]{return false;}
-            }
+        for (y, row) in self.space.iter().enumerate(){
+            if &other.space[y] != row {return false;}
         }
         true
     }
