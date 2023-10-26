@@ -1,6 +1,6 @@
 # A Simulator for Conway's Game of Life
 ### Written in Rust
-### Written for the terminal
+### Written for the terminal (& GUI soon)
 
 A terminal program for playing with different boards of Conway's Game of Life. 
 This project was intended as a way to learn Rust and perform some basic operations. 
