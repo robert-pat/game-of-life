@@ -5,20 +5,19 @@ pub enum CellState {
     Dead
 }
 #[allow(clippy::from_over_into)] // dumb lint
-impl Into<char> for CellState{
-    fn into(self) -> char {
-        match self {
+impl From<CellState> for char{
+    fn from(value: CellState) -> Self {
+        match value{
             CellState::Alive => ALIVE_STATUS_CHARACTER,
-            CellState::Dead => DEAD_STATUS_CHARACTER
+            CellState::Dead => DEAD_STATUS_CHARACTER,
         }
     }
 }
 impl std::fmt::Debug for CellState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>)->std::fmt::Result{
-        write!(f, "{}",  match self{
-            CellState::Dead => DEAD_STATUS_CHARACTER,
-            CellState::Alive => ALIVE_STATUS_CHARACTER
-        })
+        // Normal programming language with sensical syntax & errors:
+        // "let c: char = *self.into();" failed, as did just *self.into(),
+        write!(f, "{}", <CellState as Into<char>>::into(*self))
     }
 }
 #[derive(Clone)]
@@ -107,10 +106,12 @@ impl PartialEq for GameBoard{
         true
     }
 }
-/// Returns a vector of tuples containing the coordinates of all the given cell's neighbors
+/// Returns a vector with the coordinates of all the given cell's neighbors
 /// If the given coordinates are outside of the board, it will return an empty vec
 pub fn get_neighbors(board: &GameBoard, x: usize, y: usize) -> Vec<(usize, usize)>{
-    /*
+    /* Number of refactors this function has had: ||||||||
+    * swear to god this has made me lose interest in this projects at least 3 times, I hate it so much
+    * update: 10/26/2023 -> skill issue, its like much neater! */
     let (x, y) = (x as i32, y as i32);
     let (x_m, y_m) = (board.x_max as i32, board.y_max as i32);
     let mut points = vec![
@@ -121,57 +122,18 @@ pub fn get_neighbors(board: &GameBoard, x: usize, y: usize) -> Vec<(usize, usize
     );
     let mut neighbors = Vec::with_capacity(points.len());
     for p in points{ neighbors.push((p.0 as usize, p.1 as usize)); }
-*/
-    // Number of refactors this function has had: ||||||||
-    // I swear to god this has made me lose interest in this projects at least 3 times
-    // I hate it so much
-    // update: 10/26/2023 -> skill issue, its like much neater!
-    if x > board.x_max || y > board.y_max { vec![] }
-
-    else if x == 0 && y == 0{ vec![(0, 1), (1, 1), (1, 0)] }
-    else if x == 0 && y == board.y_max{ vec![(x, y -1), (x +1, y -1), (x +1, y)] }
-    else if x == board.x_max && y == 0{ vec![(x - 1, y), (x - 1, y + 1), (x, y + 1)] }
-    else if x == board.x_max && y == board.y_max{ vec![(x - 1, y - 1), (x - 1, y), (x, y - 1)] }
-
-    else if x == 0{
-        vec![(x, y - 1), (x, y + 1), (x + 1, y - 1), (x + 1, y), (x + 1, y + 1)]
-    }
-    else if x == board.x_max{
-        vec![(x - 1, y - 1), (x - 1, y), (x - 1, y + 1), (x, y - 1), (x, y + 1)]
-    }
-    else if y == 0{
-        vec![(x - 1, y), (x - 1, y + 1), (x, y + 1), (x + 1, y), (x + 1, y + 1)]
-    }
-    else if y == board.y_max{
-        vec![(x - 1, y - 1), (x - 1, y), (x, y - 1), (x + 1, y - 1), (x + 1, y)]
-    }
-
-    else{
-        vec![(x - 1, y - 1), (x - 1, y), (x - 1, y + 1), (x, y - 1), (x, y + 1), (x + 1, y - 1), (x + 1, y), (x + 1, y + 1)]
-    }
+    neighbors
 }
-
 /// Returns the next iteration of the given board, w/ the same dimensions
 fn update_board(old_board: &GameBoard) -> GameBoard {
     let mut new_board = GameBoard::new(old_board.x_max, old_board.y_max);
-
-    for y in 0..=old_board.y_max{
-        for x in 0..=old_board.x_max{
-            // Only 2 cases where cells need to be alive on the new board
-            match old_board.get(x, y){
-                // When the cell is alive, it dies w/o having 2 or 3 neighbors
-                CellState::Alive => {
-                    match num_alive_neighbors(old_board, x, y){
-                        2 | 3 => new_board.set(x, y, CellState::Alive),
-                        _ => {} // Cells are dead by default in the new board
-                    }
-                },
-                // When the cell is dead, it needs 3 alive neighbors to revive
-                CellState::Dead => {
-                    if num_alive_neighbors(old_board, x, y) == 3 {
-                        new_board.set(x, y, CellState::Alive)
-                    }
-                }
+    for (y, row) in old_board.space.iter().enumerate(){
+        for (x, cell) in row.iter().enumerate(){
+            let neighbors = num_alive_neighbors(old_board, x, y);
+            match cell{
+                CellState::Alive if neighbors == 2 || neighbors == 3 => new_board.set(x, y, CellState::Alive),
+                CellState::Dead if neighbors == 3 => new_board.set(x, y, CellState::Alive),
+                _ => {}, // Cells are dead by default
             }
         }
     }
