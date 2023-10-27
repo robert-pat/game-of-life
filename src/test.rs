@@ -6,22 +6,22 @@ use crate::game;
 #[cfg(test)]
 use crate::{GAME_X, GAME_Y};
 #[cfg(test)]
-use crate::user_io;
+use crate::save_load;
 
 #[test]
 pub fn file_io_test() {
     let mut board = game::GameBoard::new(10, 10);
     let cells = vec![(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9)];
     board.set_cells(cells, game::CellState::Alive);
-    user_io::save_board_to_file("output.txt", &board);
+    save_load::save_board_to_file("output.txt", &board);
 
-    let loaded_board = user_io::load_board_from_file("output.txt");
+    let loaded_board = save_load::load_board_from_file("output.txt");
     assert!(board == loaded_board)
 }
 
 #[test]
 fn file_convert_test(){
-    user_io::convert_wiki_to_board("test.txt");
+    save_load::convert_wiki_to_board("test.txt");
     todo!() // Need to have an actual test here; need an example board that's already converted
 }
 

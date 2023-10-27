@@ -1,4 +1,22 @@
+use std::fmt::Formatter;
 use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER};
+#[derive(Eq, PartialEq, Debug)]
+pub enum GameAction {
+    Step,
+    GrowCell,
+    KillCell,
+    PrintBoard,
+    Quit,
+    Play,
+    Save,
+    Failed,
+    Paused
+}
+impl std::fmt::Display for GameAction{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 #[derive(Clone, Copy, PartialEq)]
 pub enum CellState {
     Alive,
@@ -26,6 +44,7 @@ pub struct GameBoard {
     pub x_max: usize,
     pub y_max: usize
 }
+#[allow(unused)]
 impl GameBoard {
     /// Gets the Status of a specific cell on the board
     pub fn get(&self, x: usize, y: usize)-> CellState {
@@ -75,6 +94,10 @@ impl GameBoard {
                 other.set(x, y, new_cell);
             }
         }
+    }
+    pub(crate) fn rescale_bounds(&mut self){
+        self.y_max = self.space.len();
+        self.x_max = self.space[0].len();
     }
 }
 impl std::fmt::Display for GameBoard {

@@ -1,98 +1,10 @@
 use core::str;
-
-use crate::{game, GAME_X, GAME_Y, ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER};
-use regex::Regex;
-use lazy_static::lazy_static;
-
-pub enum GameAction {
-    Simulation,
-    GrowCell,
-    KillCell,
-    PrintBoard,
-    Quit,
-    Play,
-    Save,
-    Failed
-}
-
-/// Prompts the user for a single coordinate
-#[allow(unused)]
-pub fn get_user_coordinate(std_in: &std::io::Stdin)->(usize, usize){
-    let mut input:String = String::new();
-    println!("Enter a coordinate of the form: x,y");
-    std_in.read_line(&mut input).expect("Failed reading stdIn");
-
-    let nums: Vec<&str> = input.trim().split(',').collect();
-    (nums[0].parse().unwrap(), nums[1].parse().unwrap()) // TODO: properly handle parsing here
-}
-
-/// Prompts the user for any number of coordinates
-pub fn get_user_coordinate_vec(std_in: &std::io::Stdin)-> Vec<(usize, usize)>{
-    let mut input: String = String::new();
-
-    println!("Please enter coordinates in the form: x,y x,y x,y ...");
-    std_in.read_line(&mut input).expect("Failed reading stdIn");
-
-    parse_string_to_coordinates(input)
-}
-
-/// Parses a given string into a Vec of coordinates, uses regex to match number,number patterns
-/// This function handles parsing for get_user_coordinate_vec() & read_file_coordinates()
-pub fn parse_string_to_coordinates(input: String)->Vec<(usize, usize)>{
-    let mut cells: Vec<(usize, usize)> = Vec::new();
-
-    // from the https://docs.rs/regex/latest/regex/ page
-    lazy_static!{
-        pub static ref FILTER: Regex = Regex::new(r"([\d]+,[\d]+)+").unwrap();
-    }
-
-    for c in FILTER.captures_iter(&input){
-        let pair: Vec<_> = c.get(0).unwrap().as_str().split(',').collect();
-        cells.push((pair[0].parse().unwrap(), pair[1].parse().unwrap()));
-    }
-
-    cells
-}
-
-/// Prompts the user for a single number
-pub fn get_user_number(std_in: &std::io::Stdin)-> usize{
-    let mut input:String = String::new();
-    println!("Please enter a number:");
-    std_in.read_line(&mut input).expect("Failed reading stdIn");
-
-    return match input.trim().parse() {
-        Ok(num) => num,
-        Err(_) => {
-            eprintln!("Couldn't parse number");
-            0
-        }
-    }
-}
-
-/// Reads a line from the console & parses it into a cust_io::Action
-/// Does NOT prompt the user with a message
-pub fn get_user_game_action(std_in: &std::io::Stdin) -> GameAction {
-    println!("Pick an option:");
-    println!("(s)imulate iterations, (g)row cells, (k)ill cells, (p)rint the board, (l)et the sim. run, sa(v)e the board, (q)uit/(c)ancel");
-    let mut input: String = String::new();
-    std_in.read_line(&mut input).expect("Failed reading stdIn");
-
-    return match input.trim() {
-        "s" => GameAction::Simulation,
-        "p" => GameAction::PrintBoard,
-        "g" => GameAction::GrowCell,
-        "k" => GameAction::KillCell,
-        "q" | "c" => GameAction::Quit,
-        "l" => GameAction::Play,
-        "v" => GameAction::Save,
-        _ => GameAction::Failed
-    }
-}
+use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, game, GAME_X, GAME_Y, text};
 
 /// Reads a list of coordinates from a file.
-pub fn read_file_coordinates(path: &str) -> Vec<(usize, usize)>{
+pub fn file_to_coordinates(path: &str) -> Vec<(usize, usize)>{
     match std::fs::read_to_string(path) {
-        Ok(contents) => parse_string_to_coordinates(contents),
+        Ok(contents) => text::parse_string_to_coordinates(contents),
         Err(_) => {
             eprintln!("Failed to read coordinates from file!");
             Vec::new()
