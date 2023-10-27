@@ -1,8 +1,8 @@
+use crate::{game, text, ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, GAME_X, GAME_Y};
 use core::str;
-use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, game, GAME_X, GAME_Y, text};
 
 /// Reads a list of coordinates from a file.
-pub fn file_to_coordinates(path: &str) -> Vec<(usize, usize)>{
+pub fn file_to_coordinates(path: &str) -> Vec<(usize, usize)> {
     match std::fs::read_to_string(path) {
         Ok(contents) => text::parse_string_to_coordinates(contents),
         Err(_) => {
@@ -13,29 +13,29 @@ pub fn file_to_coordinates(path: &str) -> Vec<(usize, usize)>{
 }
 /// Writes the given game board to the specified file.
 /// This will replace the file if it already exists
-pub fn save_board_to_file(path: &str, board: &game::GameBoard){
+pub fn save_board_to_file(path: &str, board: &game::GameBoard) {
     let mut contents: String = String::new();
     let space = board.space.clone();
 
-    for row in space{
-        for cell in row{
+    for row in space {
+        for cell in row {
             contents.push(cell.into());
         }
         contents.push('\n');
     }
     contents.pop(); // a newline in appended to the end of each row, even the last one (this removes it)
-    match std::fs::write(path, contents){
+    match std::fs::write(path, contents) {
         Ok(_) => println!("Saved Successfully!"),
-        Err(_) => eprintln!("Error Saving Board")
+        Err(_) => eprintln!("Error Saving Board"),
     };
 }
 
 /// Loads a game board from a file.
 /// If the file is improperly formatted, it will return an empty board.
 /// Failing to load the board is logged to std err
-pub fn load_board_from_file(path: &str)-> game::GameBoard {
+pub fn load_board_from_file(path: &str) -> game::GameBoard {
     let mut constructed_board: Vec<Vec<game::CellState>> = Vec::new();
-    let contents = match std::fs::read_to_string(path){
+    let contents = match std::fs::read_to_string(path) {
         Ok(contents) => contents,
         Err(_) => {
             eprintln!("Failed to load board from file");
@@ -43,13 +43,16 @@ pub fn load_board_from_file(path: &str)-> game::GameBoard {
         }
     };
 
-    for row in contents.split('\n'){
+    for row in contents.split('\n') {
         let mut constructed_row: Vec<game::CellState> = Vec::new();
-        for s in row.chars(){
-            constructed_row.push(match s{
+        for s in row.chars() {
+            constructed_row.push(match s {
                 ALIVE_STATUS_CHARACTER => game::CellState::Alive,
                 DEAD_STATUS_CHARACTER => game::CellState::Dead,
-                _ => {eprintln!("Error parsing char from file: [{}]", s); continue;} //Don't push anything on error
+                _ => {
+                    eprintln!("Error parsing char from file: [{}]", s);
+                    continue;
+                } //Don't push anything on error
             });
         }
         constructed_board.push(constructed_row);
@@ -66,30 +69,37 @@ pub fn load_board_from_file(path: &str)-> game::GameBoard {
 #[allow(unused)]
 pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
     // Load the text from the file
-    let mut file = match std::fs::read_to_string(path){
+    let mut file = match std::fs::read_to_string(path) {
         Ok(contents) => contents,
-        Err(_) => {eprintln!("Error Converting board"); String::new()}
+        Err(_) => {
+            eprintln!("Error Converting board");
+            String::new()
+        }
     };
-  
+
     let mut x_max: usize = 0;
     // Loop through each row of the file w/o an "!" in it; ! are comments in the Game of Life Wiki format
-    for row in file.split('\n').filter(|r| {!r.contains('!')}){
+    for row in file.split('\n').filter(|r| !r.contains('!')) {
         let mut count = 0; // Counting how many cell characters there are in a row
-        for c in row.chars(){
-            match c {'.'| 'O' => count += 1, _ => {}}
+        for c in row.chars() {
+            match c {
+                '.' | 'O' => count += 1,
+                _ => {}
+            }
         }
-        if count > x_max{
+        if count > x_max {
             x_max = count; // Update the longest row
-        } 
+        }
     }
 
     let mut board = game::GameBoard::new(x_max, file.split('\n').count());
-    let mut x = 0; let mut y = 0;
+    let mut x = 0;
+    let mut y = 0;
 
     // Clippy linting did this; idk if it works w/ these changes
-    for (y, row) in file.split('\n').filter(|r| {!r.contains('!')}).enumerate(){
-        for (x, c) in row.chars().enumerate(){
-            match c{
+    for (y, row) in file.split('\n').filter(|r| !r.contains('!')).enumerate() {
+        for (x, c) in row.chars().enumerate() {
+            match c {
                 '.' => board.set(x, y, game::CellState::Dead), // Technically unnecessary bc cells default dead
                 'O' => board.set(x, y, game::CellState::Alive),
                 _ => {}
@@ -101,7 +111,7 @@ pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
 
 /// Overwrites a conwaylife.com text board into a game save file
 #[allow(unused)]
-pub fn convert_wiki_file_to_save(path: &str){
+pub fn convert_wiki_file_to_save(path: &str) {
     let board = convert_wiki_to_board(path); // Load a board from the file
     save_board_to_file(path, &board); // Write the board to the original file
 }
