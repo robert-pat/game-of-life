@@ -1,34 +1,30 @@
+use std::io::Read;
 use crate::game;
 use crate::game::GameAction;
 use crate::{save_load, GAME_X, GAME_Y};
 use lazy_static::lazy_static;
 use regex::Regex;
 
-pub fn setup_initial_board() -> game::GameBoard {
+pub fn initialize_board() -> game::GameBoard {
     let std_in = std::io::stdin();
-
     println!("Start (m)anually or (l)oad from a file? (\"Enter\" to skip)");
 
     let mut input: String = String::new();
-    std_in
-        .read_line(&mut input)
-        .expect("Couldn't read stdIn (call1)");
+    std_in.read_line(&mut input).expect("Couldn't read stdIn");
 
     return match input.trim() {
         "l" => {
             println!("File name?");
             input.clear();
-            std_in
-                .read_line(&mut input)
-                .expect("Failed reading stdIn (call2)");
-
+            std_in.read_line(&mut input).expect("Failed reading stdIn");
             save_load::load_board_from_file(input.trim())
         }
-        _ => {
+        "-m" => {
             let mut new_board = game::GameBoard::new(GAME_X, GAME_Y);
             new_board.set_cells(get_user_coordinate_vec(&std_in), game::CellState::Alive);
             new_board
         }
+        _ => game::GameBoard::new(GAME_X, GAME_Y),
     };
 }
 pub fn run_command_line(mut board: game::GameBoard) -> ! {
@@ -181,4 +177,10 @@ pub fn get_user_game_action(std_in: &std::io::Stdin) -> GameAction {
         "v" => GameAction::Save,
         _ => GameAction::Failed,
     };
+}
+pub(crate) fn get_user_path() -> String{
+    print!("Please enter a file:");
+    let mut line = String::new();
+    std::io::stdin().read_to_string(&mut line).expect("Failed to Read stdIn");
+    line
 }
