@@ -86,28 +86,31 @@ pub(crate) fn run_gui(
     mut game: GUIGameState,
 ) -> ! {
     l.run(move |event, _, control_flow| match event {
-        Event::MainEventsCleared => match &game.current_action {
-            GameAction::Quit => *control_flow = ControlFlow::Exit,
-            GameAction::Step => game.tick(),
-            GameAction::Paused => {}
-            GameAction::Play => {
-                if game.timing.1.elapsed() >= game.timing.0 {
-                    game.tick();
+        Event::MainEventsCleared => {
+            match &game.current_action {
+                GameAction::Quit => *control_flow = ControlFlow::Exit,
+                GameAction::Step => game.tick(),
+                GameAction::Paused => {}
+                GameAction::Play => {
+                    if game.timing.1.elapsed() >= game.timing.0 {
+                        game.tick();
+                    }
+                }
+                GameAction::GrowCell => {
+                    text::prompt_user_to_change_cells(&mut game.board, CellState::Alive)
+                }
+                GameAction::KillCell => {
+                    text::prompt_user_to_change_cells(&mut game.board, CellState::Dead)
+                }
+                GameAction::Save => {
+                    save_load::save_board_to_file(&save_load::get_user_path(), &game.board)
+                }
+                GameAction::Failed | GameAction::PrintBoard => {
+                    eprintln!("Invalid Action for GUI")
                 }
             }
-            GameAction::GrowCell => {
-                text::prompt_user_to_change_cells(&mut game.board, CellState::Alive)
-            }
-            GameAction::KillCell => {
-                text::prompt_user_to_change_cells(&mut game.board, CellState::Dead)
-            }
-            GameAction::Save => {
-                save_load::save_board_to_file(&save_load::get_user_path(), &game.board)
-            }
-            GameAction::Failed | GameAction::PrintBoard => {
-                eprintln!("Invalid Action for GUI")
-            }
-        },
+            window.request_redraw();
+        }
         Event::RedrawRequested(id) if window.id() == id => {
             draw_board(&game.board, &mut pixels, game.size_of_cell);
             pixels.render().expect("Pixels Render Failed!");
@@ -117,11 +120,15 @@ pub(crate) fn run_gui(
             WindowEvent::Focused(is_focused) if !is_focused => {
                 game.current_action = GameAction::Paused
             }
-            WindowEvent::KeyboardInput { input, .. } => match input.virtual_keycode.unwrap() {
-                VirtualKeyCode::Comma => game.current_action = GameAction::Play,
-                VirtualKeyCode::Period => game.current_action = GameAction::Paused,
-                _ => {}
-            },
+            WindowEvent::KeyboardInput { input, .. } if input.virtual_keycode.is_some() => {
+                match input.virtual_keycode.unwrap() {
+                    VirtualKeyCode::Comma => game.current_action = GameAction::Play,
+                    VirtualKeyCode::Period => game.current_action = GameAction::Paused,
+                    VirtualKeyCode::G => game.current_action = GameAction::GrowCell,
+                    VirtualKeyCode::K => game.current_action = GameAction::KillCell,
+                    _ => {}
+                }
+            }
             _ => {}
         },
         _ => {}
