@@ -97,7 +97,7 @@ pub fn display_next_iteration(board: &game::GameBoard, replace_prev: bool, gen: 
     }
     println!("Generation: {gen}\n{board}");
 }
-
+#[allow(unused)]
 /// Prompts the user for a single coordinate
 pub fn get_user_coordinate(std_in: &std::io::Stdin) -> (usize, usize) {
     let mut input: String = String::new();

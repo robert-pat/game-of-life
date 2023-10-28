@@ -1,6 +1,3 @@
-use graphics::GUIGameState;
-use winit::dpi::PhysicalSize;
-
 mod game;
 mod graphics;
 mod save_load;
@@ -11,6 +8,7 @@ const GAME_X: usize = 120;
 const GAME_Y: usize = 80;
 const ALIVE_STATUS_CHARACTER: char = '✓'; // ☑
 const DEAD_STATUS_CHARACTER: char = '✗'; // ☒
+#[allow(unused)]
 enum ProgramMode {
     CommandLine,
     Gui,
