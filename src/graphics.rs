@@ -3,7 +3,6 @@ use crate::{game, save_load, text, GAME_X, GAME_Y};
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use winit::dpi::{LogicalSize, PhysicalSize};
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
-use winit::event_loop;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
@@ -13,7 +12,7 @@ pub(crate) struct GUIGameState {
     prev_board: game::GameBoard,
     current_action: GameAction,
     size_of_cell: (u32, u32),
-    timing: (std::time::Duration, std::time::Instant)
+    timing: (std::time::Duration, std::time::Instant),
 }
 impl GUIGameState {
     pub(crate) fn new(size: (usize, usize), pixels_per_cell: (u32, u32)) -> Self {
@@ -22,7 +21,10 @@ impl GUIGameState {
             prev_board: game::GameBoard::new(size.0, size.1),
             current_action: GameAction::Paused,
             size_of_cell: pixels_per_cell,
-            timing: (std::time::Duration::from_millis(200), std::time::Instant::now()),
+            timing: (
+                std::time::Duration::from_millis(200),
+                std::time::Instant::now(),
+            ),
         }
     }
     pub(crate) fn tick(&mut self) {
@@ -83,35 +85,46 @@ pub(crate) fn run_gui(
     mut pixels: Pixels,
     mut game: GUIGameState,
 ) -> ! {
-    l.run(move |event, _, control_flow| {
-        match event {
-            Event::MainEventsCleared => {
-                match &game.current_action {
-                    GameAction::Quit => *control_flow = ControlFlow::Exit,
-                    GameAction::Step => game.tick(),
-                    GameAction::Paused => {},
-                    GameAction::Play => if game.timing.1.elapsed() >= game.timing.0 { game.tick(); },
-                    _other => consume_game_event(&mut game.board, _other),
+    l.run(move |event, _, control_flow| match event {
+        Event::MainEventsCleared => match &game.current_action {
+            GameAction::Quit => *control_flow = ControlFlow::Exit,
+            GameAction::Step => game.tick(),
+            GameAction::Paused => {}
+            GameAction::Play => {
+                if game.timing.1.elapsed() >= game.timing.0 {
+                    game.tick();
                 }
             }
-            Event::RedrawRequested(id) if window.id() == id => {
-                draw_board(&game.board, &mut pixels, game.size_of_cell);
-                pixels.render().expect("Pixels Render Failed!");
+            GameAction::GrowCell => {
+                text::prompt_user_to_change_cells(&mut game.board, CellState::Alive)
             }
-            Event::WindowEvent { window_id, event } if window_id == window.id() => match event {
-                WindowEvent::CloseRequested => *control_flow = event_loop::ControlFlow::Exit,
-                WindowEvent::Focused(is_focused) if !is_focused => {
-                    game.current_action = GameAction::Paused
-                },
-                WindowEvent::KeyboardInput {input, ..} => match input.virtual_keycode.unwrap(){
-                    VirtualKeyCode::Comma => game.current_action = GameAction::Play,
-                    VirtualKeyCode::Period => game.current_action = GameAction::Paused,
-                    _ => {},
-                }
+            GameAction::KillCell => {
+                text::prompt_user_to_change_cells(&mut game.board, CellState::Dead)
+            }
+            GameAction::Save => {
+                save_load::save_board_to_file(&save_load::get_user_path(), &game.board)
+            }
+            GameAction::Failed | GameAction::PrintBoard => {
+                eprintln!("Invalid Action for GUI")
+            }
+        },
+        Event::RedrawRequested(id) if window.id() == id => {
+            draw_board(&game.board, &mut pixels, game.size_of_cell);
+            pixels.render().expect("Pixels Render Failed!");
+        }
+        Event::WindowEvent { window_id, event } if window_id == window.id() => match event {
+            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+            WindowEvent::Focused(is_focused) if !is_focused => {
+                game.current_action = GameAction::Paused
+            }
+            WindowEvent::KeyboardInput { input, .. } => match input.virtual_keycode.unwrap() {
+                VirtualKeyCode::Comma => game.current_action = GameAction::Play,
+                VirtualKeyCode::Period => game.current_action = GameAction::Paused,
                 _ => {}
             },
             _ => {}
-        }
+        },
+        _ => {}
     });
 }
 fn draw_board(board: &game::GameBoard, pixels: &mut Pixels, alignment: (u32, u32)) {
@@ -135,14 +148,5 @@ fn draw_board(board: &game::GameBoard, pixels: &mut Pixels, alignment: (u32, u32
             }
         };
         pixel.copy_from_slice(&color);
-    }
-}
-fn consume_game_event(board: &mut game::GameBoard, event: &GameAction) {
-    let std_in = std::io::stdin();
-    match event {
-        GameAction::GrowCell => text::prompt_user_to_change_cells(board, CellState::Alive, &std_in),
-        GameAction::KillCell => text::prompt_user_to_change_cells(board, CellState::Dead, &std_in),
-        GameAction::Save => save_load::save_board_to_file(&text::get_user_path(), board),
-        _ => unimplemented!(),
     }
 }

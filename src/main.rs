@@ -22,7 +22,8 @@ fn main() {
     // Set an exit handler, so the panic error doesn't show up when the program is quit
     ctrlc::set_handler(|| {
         std::process::exit(0);
-    }).expect("Failed to set Handler!");
+    })
+    .expect("Failed to set Handler!");
 
     match get_app_mode() {
         ProgramMode::CommandLine => {

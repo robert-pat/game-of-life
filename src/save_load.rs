@@ -1,5 +1,6 @@
 use crate::{game, text, ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, GAME_X, GAME_Y};
 use core::str;
+use std::io::Read;
 
 /// Reads a list of coordinates from a file.
 pub fn file_to_coordinates(path: &str) -> Vec<(usize, usize)> {
@@ -23,7 +24,8 @@ pub fn save_board_to_file(path: &str, board: &game::GameBoard) {
         }
         contents.push('\n');
     }
-    contents.pop(); // a newline in appended to the end of each row, even the last one (this removes it)
+    // a newline in appended to the end of each row, even the last one (this removes it)
+    contents.pop();
     match std::fs::write(path, contents) {
         Ok(_) => println!("Saved Successfully!"),
         Err(_) => eprintln!("Error Saving Board"),
@@ -69,13 +71,7 @@ pub fn load_board_from_file(path: &str) -> game::GameBoard {
 #[allow(unused)]
 pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
     // Load the text from the file
-    let mut file = match std::fs::read_to_string(path) {
-        Ok(contents) => contents,
-        Err(_) => {
-            eprintln!("Error Converting board");
-            String::new()
-        }
-    };
+    let mut file = std::fs::read_to_string(path).unwrap();
 
     let mut x_max: usize = 0;
     // Loop through each row of the file w/o an "!" in it; ! are comments in the Game of Life Wiki format
@@ -108,10 +104,18 @@ pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
     }
     board
 }
-
 /// Overwrites a conwaylife.com text board into a game save file
 #[allow(unused)]
 pub fn convert_wiki_file_to_save(path: &str) {
     let board = convert_wiki_to_board(path); // Load a board from the file
     save_board_to_file(path, &board); // Write the board to the original file
+}
+
+pub(crate) fn get_user_path() -> String {
+    print!("Please enter a file:");
+    let mut line = String::new();
+    std::io::stdin()
+        .read_to_string(&mut line)
+        .expect("Failed to Read stdIn");
+    line
 }

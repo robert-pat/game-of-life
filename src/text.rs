@@ -1,4 +1,3 @@
-use std::io::Read;
 use crate::game;
 use crate::game::GameAction;
 use crate::{save_load, GAME_X, GAME_Y};
@@ -33,12 +32,8 @@ pub fn run_command_line(mut board: game::GameBoard) -> ! {
     loop {
         match get_user_game_action(&std_in) {
             GameAction::Step => board = game::run_iterations(&board, get_user_number(&std_in)),
-            GameAction::GrowCell => {
-                prompt_user_to_change_cells(&mut board, game::CellState::Alive, &std_in)
-            }
-            GameAction::KillCell => {
-                prompt_user_to_change_cells(&mut board, game::CellState::Dead, &std_in)
-            }
+            GameAction::GrowCell => prompt_user_to_change_cells(&mut board, game::CellState::Alive),
+            GameAction::KillCell => prompt_user_to_change_cells(&mut board, game::CellState::Dead),
 
             GameAction::Play => {
                 // "Play" the simulation until stopped, or everything dies
@@ -75,18 +70,15 @@ pub fn prompt_user_to_save_board(board: &game::GameBoard, std_in: &std::io::Stdi
 
 /// Prompts a user to pick cells to change on the board & changes them to the specified Status
 /// Allows for both file reading and manually typing in cells
-pub fn prompt_user_to_change_cells(
-    board: &mut game::GameBoard,
-    status: game::CellState,
-    std_in: &std::io::Stdin,
-) {
+pub fn prompt_user_to_change_cells(board: &mut game::GameBoard, status: game::CellState) {
+    let std_in = std::io::stdin();
     println!("(t)ype in coordinates or (r)ead from a file?");
 
     let mut input: String = String::new();
     std_in.read_line(&mut input).expect("Failed reading stdIn");
 
     match input.trim() {
-        "t" => board.set_cells(get_user_coordinate_vec(std_in), status),
+        "t" => board.set_cells(get_user_coordinate_vec(&std_in), status),
         "r" => {
             println!("Enter the file name:");
             input.clear();
@@ -159,7 +151,6 @@ pub fn get_user_number(std_in: &std::io::Stdin) -> usize {
         }
     };
 }
-
 /// Reads a line from the console & parses it into a Action
 pub fn get_user_game_action(std_in: &std::io::Stdin) -> GameAction {
     println!("Pick an option:");
@@ -177,10 +168,4 @@ pub fn get_user_game_action(std_in: &std::io::Stdin) -> GameAction {
         "v" => GameAction::Save,
         _ => GameAction::Failed,
     };
-}
-pub(crate) fn get_user_path() -> String{
-    print!("Please enter a file:");
-    let mut line = String::new();
-    std::io::stdin().read_to_string(&mut line).expect("Failed to Read stdIn");
-    line
 }
