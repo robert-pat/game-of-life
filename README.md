@@ -14,3 +14,4 @@ The code should be complete, but I haven't really tested any large or functional
    1) More reliable functions in text::_ (Results, Options, etc.)
    2) Condensed commands, ideally have mode & arg in 1 read
    3) Transition GUI to use new, nice text::_ functions (once available)
+5) Redo the test suite, make them actually useful / with asserts
