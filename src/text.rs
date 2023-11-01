@@ -6,7 +6,7 @@ use regex::Regex;
 
 pub fn initialize_board() -> game::GameBoard {
     let std_in = std::io::stdin();
-    println!("Start (m)anually or (l)oad from a file? (\"Enter\" to skip)");
+    println!("(m)anually or (l)oad from file? (\"Enter\" to skip)");
 
     let mut input: String = String::new();
     std_in.read_line(&mut input).expect("Couldn't read stdIn");

@@ -31,6 +31,12 @@ impl GUIGameState {
         std::mem::swap(&mut self.board, &mut self.prev_board);
         self.prev_board.update_to(&mut self.board);
     }
+    pub(crate) fn load_new_board(&mut self, new: game::GameBoard) {
+        let (b1, b2) = (new.clone(), new);
+        self.board = b1;
+        self.prev_board = b2;
+        assert!(self.board == self.prev_board); //assert_eq!() requires std::fmt::Debug ??
+    }
 }
 const RENDERED_CELL_SIZE: (u32, u32) = (8u32, 8u32);
 const WINDOW_SIZE: PhysicalSize<u32> = PhysicalSize::new(
@@ -126,6 +132,22 @@ pub(crate) fn run_gui(
                     VirtualKeyCode::Period => game.current_action = GameAction::Paused,
                     VirtualKeyCode::G => game.current_action = GameAction::GrowCell,
                     VirtualKeyCode::K => game.current_action = GameAction::KillCell,
+                    VirtualKeyCode::Equals => game.current_action = GameAction::Step,
+                    VirtualKeyCode::S => game.current_action = GameAction::Save,
+
+                    VirtualKeyCode::H => {
+                        println!("Menu: ','->Play, '.'->Pause, 'g'->Grow, 'K'->Kill, '='->Step, 'S'->Save, 'L'->Load")
+                    },
+                    VirtualKeyCode::L => {
+                        /*
+                        let mut s = String::new();
+                        std::io::stdin().read_line(&mut s).unwrap();
+                        match save_load::load_from_path(&s){
+                            Some(board) => game.load_new_board(board),
+                            None => eprintln!("Failed reading board from file! 'None' returned")
+                        }*/
+                        game.load_new_board(text::initialize_board()); //TODO: better error handle
+                    },
                     _ => {}
                 }
             }

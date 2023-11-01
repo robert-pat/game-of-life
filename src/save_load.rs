@@ -119,3 +119,16 @@ pub(crate) fn get_user_path() -> String {
         .expect("Failed to Read stdIn");
     line
 }
+
+pub(crate) fn load_from_path(path: &str) -> Option<game::GameBoard> {
+    let data = match std::fs::metadata(path) {
+        Ok(d) => d,
+        Err(_) => {
+            return None;
+        }
+    };
+    if !data.is_file() {
+        return None;
+    }
+    Some(load_board_from_file(path))
+}
