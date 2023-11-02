@@ -15,3 +15,8 @@ The code should be complete, but I haven't really tested any large or functional
    2) Condensed commands, ideally have mode & arg in 1 read
    3) Transition GUI to use new, nice text::_ functions (once available)
 5) Redo the test suite, make them actually useful / with asserts
+
+
+----
+### Refactorings:
+1) Move quitting (at least) out of GameAction and into a different set of actions

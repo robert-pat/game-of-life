@@ -37,6 +37,30 @@ impl GUIGameState {
         self.prev_board = b2;
         assert!(self.board == self.prev_board); //assert_eq!() requires std::fmt::Debug ??
     }
+    pub(crate) fn consumer_current_event(&mut self) {
+        match self.current_action {
+            GameAction::Step => self.tick(),
+            GameAction::Paused => {}
+            GameAction::Play => {
+                if self.timing.1.elapsed() >= self.timing.0 {
+                    self.tick();
+                }
+            }
+            GameAction::GrowCell => {
+                text::prompt_user_to_change_cells(&mut self.board, CellState::Alive)
+            }
+            GameAction::KillCell => {
+                text::prompt_user_to_change_cells(&mut self.board, CellState::Dead)
+            }
+            GameAction::Save => {
+                save_load::save_board_to_file(&save_load::get_user_path(), &self.board)
+            }
+            GameAction::Failed | GameAction::PrintBoard => {
+                eprintln!("Invalid Action for GUI")
+            }
+            GameAction::Quit => std::process::exit(0), // This shouldn't run (hopefully)
+        }
+    }
 }
 const RENDERED_CELL_SIZE: (u32, u32) = (8u32, 8u32);
 const WINDOW_SIZE: PhysicalSize<u32> = PhysicalSize::new(
@@ -93,28 +117,8 @@ pub(crate) fn run_gui(
 ) -> ! {
     l.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
-            match &game.current_action {
-                GameAction::Quit => *control_flow = ControlFlow::Exit,
-                GameAction::Step => game.tick(),
-                GameAction::Paused => {}
-                GameAction::Play => {
-                    if game.timing.1.elapsed() >= game.timing.0 {
-                        game.tick();
-                    }
-                }
-                GameAction::GrowCell => {
-                    text::prompt_user_to_change_cells(&mut game.board, CellState::Alive)
-                }
-                GameAction::KillCell => {
-                    text::prompt_user_to_change_cells(&mut game.board, CellState::Dead)
-                }
-                GameAction::Save => {
-                    save_load::save_board_to_file(&save_load::get_user_path(), &game.board)
-                }
-                GameAction::Failed | GameAction::PrintBoard => {
-                    eprintln!("Invalid Action for GUI")
-                }
-            }
+            if game.current_action == GameAction::Quit {*control_flow = ControlFlow::Exit; }
+            game.consumer_current_event();
             window.request_redraw();
         }
         Event::RedrawRequested(id) if window.id() == id => {

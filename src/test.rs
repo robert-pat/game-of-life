@@ -24,18 +24,11 @@ pub fn file_io_test() {
         (9, 9),
     ];
     board.set_cells(cells, game::CellState::Alive);
-    save_load::save_board_to_file("output.txt", &board);
+    save_load::save_board_to_file("test-tmp.txt", &board);
 
-    let loaded_board = save_load::load_board_from_file("output.txt");
+    let loaded_board = save_load::load_board_from_file("test-tmp.txt");
     assert!(board == loaded_board)
 }
-
-#[test]
-fn file_convert_test() {
-    save_load::convert_wiki_to_board("test.txt");
-    todo!() // Need to have an actual test here; need an example board that's already converted
-}
-
 #[test]
 fn check_all_neighbor_counts() {
     let board = game::GameBoard::new(GAME_X, GAME_Y);
@@ -80,7 +73,6 @@ pub fn mini_find_neighbors_test() {
         )
     }
 }
-
 #[test]
 pub fn dead_board_test() {
     let mut board = game::GameBoard::new(10, 10);
@@ -90,25 +82,18 @@ pub fn dead_board_test() {
     assert!(board.has_alive_cells());
 }
 #[test]
-// Test code to ensure overwriting of previous boards works correctly
-pub fn line_rewriting_demo() {
-    let mut std_out = std::io::stdout();
-    print!("Here is a line.");
-    std_out.flush().expect("Couldn't flush stdOut");
-    print!("\r");
-    print!("Here is the line rewritten!");
-    std_out.flush().expect("Couldn't flush stdOut");
-}
-#[test]
 /// Test the neighboring cell code
 pub fn print_all_raw_neighbors() {
     let board = game::GameBoard::new(5, 5);
+    let mut s = String::with_capacity(25 * 40); // ~40 chars per cell ?
     for y in 0..=board.y_max {
         for x in 0..=board.x_max {
             let neighbors = game::get_neighbors(&board, x, y);
-            println!("({}, {}) --> {:?}", x, y, neighbors);
+            // Love it when what ever this is?
+            s += &*format!("({}, {}) --> {:?}", x, y, neighbors);
         }
     }
+    std::fs::write("test-temp.txt", s).unwrap();
 }
 #[test]
 pub fn display_board_rewriting() {
