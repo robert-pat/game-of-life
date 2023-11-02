@@ -69,7 +69,7 @@ const WINDOW_SIZE: PhysicalSize<u32> = PhysicalSize::new(
 );
 /// Entry point for GUI control and handling of the application
 /// The program will run
-pub(crate) fn gui() -> ! {
+pub(crate) fn gui(/* TODO: Add Option<game::GameBoard>, open on startup ability*/) -> ! {
     let game = GUIGameState::new((GAME_X, GAME_Y), RENDERED_CELL_SIZE);
     let (mut pixels, window, event_loop) = gui_init(WINDOW_SIZE);
     initial_gui_draw(&mut pixels);
@@ -114,6 +114,7 @@ pub(crate) fn run_gui(
     window: Window,
     mut pixels: Pixels,
     mut game: GUIGameState,
+    // mut action_queue: Vec<__SOMETHING__>,
 ) -> ! {
     l.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
