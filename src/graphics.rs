@@ -11,7 +11,7 @@ pub(crate) struct GUIGameState {
     pub(crate) board: game::GameBoard,
     #[allow(unused)] // Shouldn't need to read the previous board
     prev_board: game::GameBoard,
-    current_action: GameAction,
+    current_action: Option<GameAction>,
     size_of_cell: (u32, u32),
     timing: (std::time::Duration, std::time::Instant),
 }
@@ -20,7 +20,7 @@ impl GUIGameState {
         GUIGameState {
             board: game::GameBoard::new(size.0, size.1),
             prev_board: game::GameBoard::new(size.0, size.1),
-            current_action: GameAction::Paused,
+            current_action: None,
             size_of_cell: pixels_per_cell,
             timing: (
                 std::time::Duration::from_millis(200),
@@ -39,7 +39,8 @@ impl GUIGameState {
         assert!(self.board == self.prev_board); //assert_eq!() requires std::fmt::Debug ??
     }
     pub(crate) fn consumer_current_event(&mut self) {
-        match self.current_action {
+        if self.current_action.is_none() { return; }
+        match self.current_action.unwrap() {
             GameAction::Step => self.tick(),
             GameAction::Paused => {}
             GameAction::Play => {
@@ -57,6 +58,7 @@ impl GUIGameState {
                 eprintln!("Attempted to consume GameAction that's invalid for GUI!");
             }
         }
+        self.current_action = None;
     }
 }
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -79,6 +81,10 @@ impl ProgramManager {
                 self.to_process.push_back(event);
             }
             return Ok(());
+        }
+        else if self.to_process.is_empty(){
+            self.to_process.push_back(event);
+            return  Ok(());
         }
         Err(())
     }
@@ -140,11 +146,12 @@ fn run_gui(
 ) -> ! {
     l.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
-            debug_assert!(!GAME_ACTIONS_TO_REMOVE.contains(&game.current_action));
+            if game.current_action.is_some(){
+                assert!(!GAME_ACTIONS_TO_REMOVE.contains(&game.current_action.unwrap()));
+            }
+
             game.consumer_current_event();
 
-            // TODO: this currently breaks the whole loop, prevents the window from updating
-            // Specifically, using "g" to grow cells
             if let Some(e) = state.pop(){
                 use ProgramEvent as GEvent;
                 match e{
@@ -167,20 +174,25 @@ fn run_gui(
                     GEvent::ExitApplication => *control_flow = ControlFlow::Exit,
                 }
             }
+
+            window.request_redraw(); // This shouldn't be needed, but doesn't update w/o it
         }
         Event::RedrawRequested(id) if window.id() == id => {
             draw_board(&game.board, &mut pixels, game.size_of_cell);
-            pixels.render().expect("Pixels Render Failed!");
+            match pixels.render(){
+                Ok(_) => {},
+                Err(e) => eprintln!("Error Rendering with Pixels: {e}"),
+            };
         }
         Event::WindowEvent { window_id, event } if window_id == window.id() => match event {
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
             WindowEvent::KeyboardInput { input, .. } if input.virtual_keycode.is_some() => {
                 match input.virtual_keycode.unwrap() {
-                    VirtualKeyCode::Comma => game.current_action = GameAction::Play,
-                    VirtualKeyCode::Period => game.current_action = GameAction::Paused,
-                    VirtualKeyCode::G => game.current_action = GameAction::GrowCell,
-                    VirtualKeyCode::K => game.current_action = GameAction::KillCell,
-                    VirtualKeyCode::Equals => game.current_action = GameAction::Step,
+                    VirtualKeyCode::Comma => game.current_action = Some(GameAction::Play),
+                    VirtualKeyCode::Period => game.current_action = Some(GameAction::Paused),
+                    VirtualKeyCode::G => game.current_action = Some(GameAction::GrowCell),
+                    VirtualKeyCode::K => game.current_action = Some(GameAction::KillCell),
+                    VirtualKeyCode::Equals => game.current_action = Some(GameAction::Step),
 
                     VirtualKeyCode::S => state.add_event_ignore(ProgramEvent::SaveBoard),
                     VirtualKeyCode::H => state.add_event_ignore(ProgramEvent::ShowHelp),
