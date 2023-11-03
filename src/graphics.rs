@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use crate::game::{CellState, GameAction};
 use crate::{game, save_load, text, GAME_X, GAME_Y};
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
@@ -66,16 +67,16 @@ enum ProgramEvent {
     ExitApplication,
 }
 struct ProgramManager {
-    to_process: Vec<ProgramEvent>,
+    to_process: VecDeque<ProgramEvent>,
 }
 impl ProgramManager {
     fn new() -> Self {
-        ProgramManager { to_process: vec![] }
+        ProgramManager { to_process: VecDeque::new() }
     }
     fn add_event(&mut self, event: ProgramEvent) -> Result<(), ()> {
-        if let Some(e) = self.to_process.last() {
+        if let Some(e) = self.to_process.back() {
             if *e != event {
-                self.to_process.push(event);
+                self.to_process.push_back(event);
             }
             return Ok(());
         }
@@ -85,7 +86,7 @@ impl ProgramManager {
         let _ = self.add_event(event);
     }
     fn pop(&mut self) -> Option<ProgramEvent> {
-        self.to_process.pop()
+        self.to_process.pop_front()
     }
 }
 const RENDERED_CELL_SIZE: (u32, u32) = (8u32, 8u32);
@@ -142,6 +143,8 @@ fn run_gui(
             debug_assert!(!GAME_ACTIONS_TO_REMOVE.contains(&game.current_action));
             game.consumer_current_event();
 
+            // TODO: this currently breaks the whole loop, prevents the window from updating
+            // Specifically, using "g" to grow cells
             if let Some(e) = state.pop(){
                 use ProgramEvent as GEvent;
                 match e{
