@@ -28,6 +28,6 @@ fn main() {
             let board = text::initialize_board();
             text::run_command_line(board);
         }
-        ProgramMode::Gui => graphics::gui(),
+        ProgramMode::Gui => graphics::gui(None),
     }
 }

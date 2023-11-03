@@ -52,14 +52,40 @@ impl GUIGameState {
             GameAction::KillCell => {
                 text::prompt_user_to_change_cells(&mut self.board, CellState::Dead)
             }
-            GameAction::Save => {
-                save_load::save_board_to_file(&save_load::get_user_path(), &self.board)
+            GameAction::Failed | GameAction::PrintBoard | GameAction::Save | GameAction::Quit => {
+                eprintln!("Attempted to consume GameAction that's invalid for GUI!");
             }
-            GameAction::Failed | GameAction::PrintBoard => {
-                eprintln!("Invalid Action for GUI")
-            }
-            GameAction::Quit => std::process::exit(0), // This shouldn't run (hopefully)
         }
+    }
+}
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+enum ProgramEvent {
+    ShowHelp,
+    SaveBoard,
+    LoadBoard,
+    ExitApplication,
+}
+struct ProgramManager {
+    to_process: Vec<ProgramEvent>,
+}
+impl ProgramManager {
+    fn new() -> Self {
+        ProgramManager { to_process: vec![] }
+    }
+    fn add_event(&mut self, event: ProgramEvent) -> Result<(), ()> {
+        if let Some(e) = self.to_process.last() {
+            if *e != event {
+                self.to_process.push(event);
+            }
+            return Ok(());
+        }
+        Err(())
+    }
+    fn add_event_ignore(&mut self, event: ProgramEvent) {
+        let _ = self.add_event(event);
+    }
+    fn pop(&mut self) -> Option<ProgramEvent> {
+        self.to_process.pop()
     }
 }
 const RENDERED_CELL_SIZE: (u32, u32) = (8u32, 8u32);
@@ -67,19 +93,23 @@ const WINDOW_SIZE: PhysicalSize<u32> = PhysicalSize::new(
     GAME_X as u32 * RENDERED_CELL_SIZE.0,
     GAME_Y as u32 * RENDERED_CELL_SIZE.1,
 );
+const GAME_ACTIONS_TO_REMOVE: [GameAction; 2] = [GameAction::Quit, GameAction::Save];
 /// Entry point for GUI control and handling of the application
 /// The program will run
-pub(crate) fn gui(/* TODO: Add Option<game::GameBoard>, open on startup ability*/) -> ! {
-    let game = GUIGameState::new((GAME_X, GAME_Y), RENDERED_CELL_SIZE);
+pub(crate) fn gui(start: Option<game::GameBoard>) -> ! {
+    let mut game = GUIGameState::new((GAME_X, GAME_Y), RENDERED_CELL_SIZE);
     let (mut pixels, window, event_loop) = gui_init(WINDOW_SIZE);
     initial_gui_draw(&mut pixels);
     match pixels.render() {
         Ok(_) => {}
         Err(e) => eprintln!("Error rendering pixels! {e}"),
     };
-    run_gui(event_loop, window, pixels, game);
+    if let Some(starting_board) = start {
+        game.load_new_board(starting_board);
+    }
+    run_gui(event_loop, window, pixels, game, ProgramManager::new());
 }
-pub(crate) fn gui_init(size: PhysicalSize<u32>) -> (Pixels, Window, EventLoop<()>) {
+fn gui_init(size: PhysicalSize<u32>) -> (Pixels, Window, EventLoop<()>) {
     let event_loop = EventLoop::new();
     let window = {
         let size = LogicalSize::new(size.width as f64, size.height as f64);
@@ -99,7 +129,71 @@ pub(crate) fn gui_init(size: PhysicalSize<u32>) -> (Pixels, Window, EventLoop<()
     };
     (pixels, window, event_loop)
 }
-pub(crate) fn initial_gui_draw(pixels: &mut Pixels) {
+
+fn run_gui(
+    l: EventLoop<()>,
+    window: Window,
+    mut pixels: Pixels,
+    mut game: GUIGameState,
+    mut state: ProgramManager,
+) -> ! {
+    l.run(move |event, _, control_flow| match event {
+        Event::MainEventsCleared => {
+            debug_assert!(!GAME_ACTIONS_TO_REMOVE.contains(&game.current_action));
+            game.consumer_current_event();
+
+            if let Some(e) = state.pop(){
+                use ProgramEvent as GEvent;
+                match e{
+                    GEvent::ShowHelp => println!(
+                        "Menu: ','->Play, '.'->Pause, 'g'->Grow, 'K'->Kill, '='->Step, 'S'->Save, 'L'->Load"
+                    ),
+                    GEvent::SaveBoard => {
+                        let path = save_load::get_file_path();
+                        save_load::save_board_to_file(path.trim(), &game.board);
+                    },
+                    GEvent::LoadBoard => {
+                        let path = save_load::get_file_path();
+                        if let Some(b) = save_load::load_from_path(path.trim()){
+                            game.load_new_board(b);
+                        }
+                        else{
+                            eprintln!("Couldn't load board!");
+                        }
+                    },
+                    GEvent::ExitApplication => *control_flow = ControlFlow::Exit,
+                }
+            }
+        }
+        Event::RedrawRequested(id) if window.id() == id => {
+            draw_board(&game.board, &mut pixels, game.size_of_cell);
+            pixels.render().expect("Pixels Render Failed!");
+        }
+        Event::WindowEvent { window_id, event } if window_id == window.id() => match event {
+            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+            WindowEvent::KeyboardInput { input, .. } if input.virtual_keycode.is_some() => {
+                match input.virtual_keycode.unwrap() {
+                    VirtualKeyCode::Comma => game.current_action = GameAction::Play,
+                    VirtualKeyCode::Period => game.current_action = GameAction::Paused,
+                    VirtualKeyCode::G => game.current_action = GameAction::GrowCell,
+                    VirtualKeyCode::K => game.current_action = GameAction::KillCell,
+                    VirtualKeyCode::Equals => game.current_action = GameAction::Step,
+
+                    VirtualKeyCode::S => state.add_event_ignore(ProgramEvent::SaveBoard),
+                    VirtualKeyCode::H => state.add_event_ignore(ProgramEvent::ShowHelp),
+                    VirtualKeyCode::L => state.add_event_ignore(ProgramEvent::LoadBoard),
+                    VirtualKeyCode::Q => state.add_event_ignore(ProgramEvent::ExitApplication),
+
+                    VirtualKeyCode::Escape => *control_flow = ControlFlow::Exit,
+                    _ => {}
+                }
+            }
+            _ => {}
+        },
+        _ => {}
+    });
+}
+fn initial_gui_draw(pixels: &mut Pixels) {
     for (idx, pixel) in pixels.frame_mut().chunks_exact_mut(4).enumerate() {
         let (x, y) = (
             idx % WINDOW_SIZE.width as usize,
@@ -108,58 +202,6 @@ pub(crate) fn initial_gui_draw(pixels: &mut Pixels) {
         let color = [(x % 255) as u8, (y % 255) as u8, 128u8, 128u8];
         pixel.copy_from_slice(&color);
     }
-}
-pub(crate) fn run_gui(
-    l: EventLoop<()>,
-    window: Window,
-    mut pixels: Pixels,
-    mut game: GUIGameState,
-    // mut action_queue: Vec<__SOMETHING__>,
-) -> ! {
-    l.run(move |event, _, control_flow| match event {
-        Event::MainEventsCleared => {
-            if game.current_action == GameAction::Quit {*control_flow = ControlFlow::Exit; }
-            game.consumer_current_event();
-            window.request_redraw();
-        }
-        Event::RedrawRequested(id) if window.id() == id => {
-            draw_board(&game.board, &mut pixels, game.size_of_cell);
-            pixels.render().expect("Pixels Render Failed!");
-        }
-        Event::WindowEvent { window_id, event } if window_id == window.id() => match event {
-            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-            WindowEvent::Focused(is_focused) if !is_focused => {
-                game.current_action = GameAction::Paused
-            }
-            WindowEvent::KeyboardInput { input, .. } if input.virtual_keycode.is_some() => {
-                match input.virtual_keycode.unwrap() {
-                    VirtualKeyCode::Comma => game.current_action = GameAction::Play,
-                    VirtualKeyCode::Period => game.current_action = GameAction::Paused,
-                    VirtualKeyCode::G => game.current_action = GameAction::GrowCell,
-                    VirtualKeyCode::K => game.current_action = GameAction::KillCell,
-                    VirtualKeyCode::Equals => game.current_action = GameAction::Step,
-                    VirtualKeyCode::S => game.current_action = GameAction::Save,
-
-                    VirtualKeyCode::H => {
-                        println!("Menu: ','->Play, '.'->Pause, 'g'->Grow, 'K'->Kill, '='->Step, 'S'->Save, 'L'->Load")
-                    },
-                    VirtualKeyCode::L => {
-                        /*
-                        let mut s = String::new();
-                        std::io::stdin().read_line(&mut s).unwrap();
-                        match save_load::load_from_path(&s){
-                            Some(board) => game.load_new_board(board),
-                            None => eprintln!("Failed reading board from file! 'None' returned")
-                        }*/
-                        game.load_new_board(text::initialize_board()); //TODO: better error handle
-                    },
-                    _ => {}
-                }
-            }
-            _ => {}
-        },
-        _ => {}
-    });
 }
 fn draw_board(board: &game::GameBoard, pixels: &mut Pixels, alignment: (u32, u32)) {
     const PADDING: u32 = 2;

@@ -1,6 +1,5 @@
 use crate::{game, text, ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, GAME_X, GAME_Y};
 use core::str;
-use std::io::Read;
 
 /// Reads a list of coordinates from a file.
 pub fn file_to_coordinates(path: &str) -> Vec<(usize, usize)> {
@@ -111,15 +110,6 @@ pub fn convert_wiki_file_to_save(path: &str) {
     save_board_to_file(path, &board); // Write the board to the original file
 }
 
-pub(crate) fn get_user_path() -> String {
-    print!("Please enter a file:");
-    let mut line = String::new();
-    std::io::stdin()
-        .read_to_string(&mut line)
-        .expect("Failed to Read stdIn");
-    line
-}
-
 pub(crate) fn load_from_path(path: &str) -> Option<game::GameBoard> {
     let data = match std::fs::metadata(path) {
         Ok(d) => d,
@@ -131,4 +121,17 @@ pub(crate) fn load_from_path(path: &str) -> Option<game::GameBoard> {
         return None;
     }
     Some(load_board_from_file(path))
+}
+
+pub(crate) fn get_file_path() -> String {
+    let mut s = String::new();
+    println!("Please enter a file path:");
+    match std::io::stdin().read_line(&mut s) {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("Error reading stdIn: {e}");
+            return "default.txt".to_string();
+        }
+    };
+    s
 }

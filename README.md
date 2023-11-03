@@ -19,4 +19,5 @@ The code should be complete, but I haven't really tested any large or functional
 
 ----
 ### Refactorings:
-1) Move quitting (at least) out of GameAction and into a different set of actions
+1) Revamp the legacy text control mode into a better version
+2) Move improperly added GameActions to a different control method for text
