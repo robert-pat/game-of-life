@@ -24,7 +24,7 @@ pub fn file_io_test() {
         (9, 9),
     ];
     board.set_cells(cells, game::CellState::Alive);
-    save_load::save_board_to_file("test-tmp.txt", &board);
+    save_load::save_board("test-tmp.txt", &board);
 
     let loaded_board = save_load::load_board_from_file("test-tmp.txt");
     assert!(board == loaded_board)

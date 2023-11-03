@@ -25,10 +25,7 @@ fn main() {
 
     let start_board = save_load::load_board_from_file("board.txt");
     match get_app_mode() {
-        ProgramMode::CommandLine => {
-            let board = text::initialize_board();
-            text::run_command_line(board);
-        }
+        ProgramMode::CommandLine => text::text(),
         ProgramMode::Gui => graphics::gui(Some(start_board)),
     }
 }

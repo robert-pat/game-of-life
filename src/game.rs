@@ -17,7 +17,7 @@ impl std::fmt::Display for GameAction {
         write!(f, "{:?}", self)
     }
 }
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CellState {
     Alive,
     Dead,

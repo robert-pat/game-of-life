@@ -1,7 +1,7 @@
-use std::collections::VecDeque;
 use crate::game::{CellState, GameAction};
-use crate::{game, save_load, text, GAME_X, GAME_Y};
+use crate::{game, GAME_X, GAME_Y, save_load, text};
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
+use std::collections::VecDeque;
 use winit::dpi::{LogicalSize, PhysicalSize};
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -39,7 +39,9 @@ impl GUIGameState {
         assert!(self.board == self.prev_board); //assert_eq!() requires std::fmt::Debug ??
     }
     pub(crate) fn consumer_current_event(&mut self) {
-        if self.current_action.is_none() { return; }
+        if self.current_action.is_none() {
+            return;
+        }
         match self.current_action.unwrap() {
             GameAction::Step => self.tick(),
             GameAction::Paused => {}
@@ -73,7 +75,9 @@ struct ProgramManager {
 }
 impl ProgramManager {
     fn new() -> Self {
-        ProgramManager { to_process: VecDeque::new() }
+        ProgramManager {
+            to_process: VecDeque::new(),
+        }
     }
     fn add_event(&mut self, event: ProgramEvent) -> Result<(), ()> {
         if let Some(e) = self.to_process.back() {
@@ -81,10 +85,9 @@ impl ProgramManager {
                 self.to_process.push_back(event);
             }
             return Ok(());
-        }
-        else if self.to_process.is_empty(){
+        } else if self.to_process.is_empty() {
             self.to_process.push_back(event);
-            return  Ok(());
+            return Ok(());
         }
         Err(())
     }
@@ -154,17 +157,18 @@ fn run_gui(
 
             if let Some(e) = state.pop(){
                 use ProgramEvent as GEvent;
+                use crate::text;
                 match e{
                     GEvent::ShowHelp => println!(
                         "Menu: ','->Play, '.'->Pause, 'g'->Grow, 'K'->Kill, '='->Step, 'S'->Save, 'L'->Load"
                     ),
                     GEvent::SaveBoard => {
-                        let path = save_load::get_file_path();
-                        save_load::save_board_to_file(path.trim(), &game.board);
+                        let path = text::get_file_path();
+                        save_load::save_board(path.trim(), &game.board);
                     },
                     GEvent::LoadBoard => {
-                        let path = save_load::get_file_path();
-                        if let Some(b) = save_load::load_from_path(path.trim()){
+                        let path = text::get_file_path();
+                        if let Some(b) = save_load::load_board_from_path(path.trim()){
                             game.load_new_board(b);
                         }
                         else{

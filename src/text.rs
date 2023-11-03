@@ -1,32 +1,34 @@
 use crate::game;
 use crate::game::GameAction;
-use crate::{save_load, GAME_X, GAME_Y};
+use crate::{GAME_X, GAME_Y, save_load};
 use lazy_static::lazy_static;
 use regex::Regex;
-
-pub fn initialize_board() -> game::GameBoard {
+pub(crate) fn text() -> ! {
+    println!("Welcome to the Game of Life!");
+    let start = initialize_board();
+    run_command_line(start);
+}
+fn initialize_board() -> game::GameBoard {
     let std_in = std::io::stdin();
-    println!("(m)anually or (l)oad from file? (\"Enter\" to skip)");
+    println!("Start (m)anually or (l)oad from file? (\"Enter\" to skip)");
 
     let mut input: String = String::new();
     std_in.read_line(&mut input).expect("Couldn't read stdIn");
 
-    return match input.trim() {
+    match input.trim() {
         "l" => {
-            println!("File name?");
-            input.clear();
-            std_in.read_line(&mut input).expect("Failed reading stdIn");
-            save_load::load_board_from_file(input.trim())
+            let p = get_file_path();
+            save_load::load_board_from_file(p.trim())
         }
-        "-m" => {
+        "m" => {
             let mut new_board = game::GameBoard::new(GAME_X, GAME_Y);
-            new_board.set_cells(get_user_coordinate_vec(&std_in), game::CellState::Alive);
+            new_board.set_cells(get_coordinates(&std_in), game::CellState::Alive);
             new_board
         }
         _ => game::GameBoard::new(GAME_X, GAME_Y),
-    };
+    }
 }
-pub fn run_command_line(mut board: game::GameBoard) -> ! {
+fn run_command_line(mut board: game::GameBoard) -> ! {
     let std_in = std::io::stdin();
 
     loop {
@@ -48,7 +50,7 @@ pub fn run_command_line(mut board: game::GameBoard) -> ! {
                 println!("All Cells died:\n{}", board);
                 std::process::exit(0);
             }
-            GameAction::Save => prompt_user_to_save_board(&board, &std_in),
+            GameAction::Save => user_save_board(&board),
             GameAction::PrintBoard => {
                 println!("{}", board)
             }
@@ -60,17 +62,15 @@ pub fn run_command_line(mut board: game::GameBoard) -> ! {
 }
 
 /// Saves the board to the specified file
-pub fn prompt_user_to_save_board(board: &game::GameBoard, std_in: &std::io::Stdin) {
+fn user_save_board(board: &game::GameBoard) {
     println!("Where would you like to save the board?");
-    let mut input: String = String::new();
-    std_in.read_line(&mut input).expect("Failed reading stdIn");
-
-    save_load::save_board_to_file(input.trim(), board);
+    let p = get_file_path();
+    save_load::save_board(p.trim(), board);
 }
 
 /// Prompts a user to pick cells to change on the board & changes them to the specified Status
 /// Allows for both file reading and manually typing in cells
-pub fn prompt_user_to_change_cells(board: &mut game::GameBoard, status: game::CellState) {
+pub(crate) fn prompt_user_to_change_cells(board: &mut game::GameBoard, status: game::CellState) {
     let std_in = std::io::stdin();
     println!("(t)ype in coordinates or (r)ead from a file?");
 
@@ -78,18 +78,16 @@ pub fn prompt_user_to_change_cells(board: &mut game::GameBoard, status: game::Ce
     std_in.read_line(&mut input).expect("Failed reading stdIn");
 
     match input.trim() {
-        "t" => board.set_cells(get_user_coordinate_vec(&std_in), status),
+        "t" => board.set_cells(get_coordinates(&std_in), status),
         "r" => {
-            println!("Enter the file name:");
-            input.clear();
-            std_in.read_line(&mut input).expect("Failed reading stdIn");
-            board.set_cells(save_load::file_to_coordinates(input.trim()), status);
+            let p = get_file_path();
+            board.set_cells(save_load::read_coords_from_file(p.trim()), status);
         }
         _ => eprintln!("Error, No Cells Changed."),
     }
 }
 /// Prints the board to the terminal, replacing previous text if replace_prev is true
-pub fn display_next_iteration(board: &game::GameBoard, replace_prev: bool, gen: i32) {
+fn display_next_iteration(board: &game::GameBoard, replace_prev: bool, gen: i32) {
     if replace_prev {
         for _ in 0..=board.y_max {
             print!("{}", ansi_escapes::CursorPrevLine);
@@ -97,31 +95,20 @@ pub fn display_next_iteration(board: &game::GameBoard, replace_prev: bool, gen: 
     }
     println!("Generation: {gen}\n{board}");
 }
-#[allow(unused)]
-/// Prompts the user for a single coordinate
-pub fn get_user_coordinate(std_in: &std::io::Stdin) -> (usize, usize) {
-    let mut input: String = String::new();
-    println!("Enter a single coordinate: x,y");
-    std_in.read_line(&mut input).expect("Failed reading stdIn");
-
-    let v = parse_string_to_coordinates(input);
-    assert_eq!(v.len(), 1);
-    v[0]
-}
 
 /// Prompts the user for any number of coordinates
-pub fn get_user_coordinate_vec(std_in: &std::io::Stdin) -> Vec<(usize, usize)> {
+pub fn get_coordinates(std_in: &std::io::Stdin) -> Vec<(usize, usize)> {
     let mut input: String = String::new();
 
     println!("Enter coordinate(s): x,y x,y x,y ...");
     std_in.read_line(&mut input).expect("Failed reading stdIn");
 
-    parse_string_to_coordinates(input)
+    parse_to_coordinates(input)
 }
 
 /// Parses a given string into a Vec of coordinates, uses regex to match number,number patterns
 /// This function handles parsing for get_user_coordinate_vec() & read_file_coordinates()
-pub fn parse_string_to_coordinates(input: String) -> Vec<(usize, usize)> {
+pub(crate) fn parse_to_coordinates(input: String) -> Vec<(usize, usize)> {
     let mut cells: Vec<(usize, usize)> = Vec::new();
 
     // from the https://docs.rs/regex/latest/regex/ page
@@ -138,7 +125,7 @@ pub fn parse_string_to_coordinates(input: String) -> Vec<(usize, usize)> {
 }
 
 /// Prompts the user for a single number
-pub fn get_user_number(std_in: &std::io::Stdin) -> usize {
+pub(crate) fn get_user_number(std_in: &std::io::Stdin) -> usize {
     let mut input: String = String::new();
     println!("Please enter a number:");
     std_in.read_line(&mut input).expect("Failed reading stdIn");
@@ -168,4 +155,17 @@ pub fn get_user_game_action(std_in: &std::io::Stdin) -> GameAction {
         "v" => GameAction::Save,
         _ => GameAction::Failed,
     };
+}
+
+pub(crate) fn get_file_path() -> String {
+    let mut s = String::new();
+    println!("Please enter a file path:");
+    match std::io::stdin().read_line(&mut s) {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("Error reading stdIn: {e}");
+            return "default.txt".to_string();
+        }
+    };
+    s
 }

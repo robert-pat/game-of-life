@@ -1,25 +1,24 @@
-use crate::{game, text, ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, GAME_X, GAME_Y};
+use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, game, GAME_X, GAME_Y, text};
 use core::str;
 
-/// Reads a list of coordinates from a file.
-pub fn file_to_coordinates(path: &str) -> Vec<(usize, usize)> {
+//noinspection SpellCheckingInspection
+pub fn read_coords_from_file(path: &str) -> Vec<(usize, usize)> {
     match std::fs::read_to_string(path) {
-        Ok(contents) => text::parse_string_to_coordinates(contents),
-        Err(_) => {
-            eprintln!("Failed to read coordinates from file!");
+        Ok(contents) => text::parse_to_coordinates(contents),
+        Err(e) => {
+            eprintln!("Failed to read coordinates from file: {e}!");
             Vec::new()
         }
     }
 }
 /// Writes the given game board to the specified file.
 /// This will replace the file if it already exists
-pub fn save_board_to_file(path: &str, board: &game::GameBoard) {
+pub fn save_board(path: &str, board: &game::GameBoard) {
     let mut contents: String = String::new();
-    let space = board.space.clone();
 
-    for row in space {
+    for row in &board.space {
         for cell in row {
-            contents.push(cell.into());
+            contents.push((*cell).into());
         }
         contents.push('\n');
     }
@@ -69,33 +68,23 @@ pub fn load_board_from_file(path: &str) -> game::GameBoard {
 /// Converts a raw text board from conwaylife.com into internal game representation
 #[allow(unused)]
 pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
-    // Load the text from the file
+    // Load the text from the file, comments are marked w/ "!"
     let mut file = std::fs::read_to_string(path).unwrap();
 
     let mut x_max: usize = 0;
-    // Loop through each row of the file w/o an "!" in it; ! are comments in the Game of Life Wiki format
     for row in file.split('\n').filter(|r| !r.contains('!')) {
-        let mut count = 0; // Counting how many cell characters there are in a row
-        for c in row.chars() {
-            match c {
-                '.' | 'O' => count += 1,
-                _ => {}
-            }
-        }
+        let mut count = 0; // Find the largest row to set the board size
+        row.chars().for_each(|c| {if c == '.' || c == 'O' {count += 1; }});
         if count > x_max {
-            x_max = count; // Update the longest row
+            x_max = count;
         }
     }
 
-    let mut board = game::GameBoard::new(x_max, file.split('\n').count());
-    let mut x = 0;
-    let mut y = 0;
-
-    // Clippy linting did this; idk if it works w/ these changes
+    let mut board = game::GameBoard::new(x_max, file.lines().count());
     for (y, row) in file.split('\n').filter(|r| !r.contains('!')).enumerate() {
         for (x, c) in row.chars().enumerate() {
             match c {
-                '.' => board.set(x, y, game::CellState::Dead), // Technically unnecessary bc cells default dead
+                '.' => board.set(x, y, game::CellState::Dead),
                 'O' => board.set(x, y, game::CellState::Alive),
                 _ => {}
             }
@@ -105,12 +94,12 @@ pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
 }
 /// Overwrites a conwaylife.com text board into a game save file
 #[allow(unused)]
-pub fn convert_wiki_file_to_save(path: &str) {
+pub fn create_save_from_wiki(path: &str) {
     let board = convert_wiki_to_board(path); // Load a board from the file
-    save_board_to_file(path, &board); // Write the board to the original file
+    save_board(path, &board); // Write the board to the original file
 }
 
-pub(crate) fn load_from_path(path: &str) -> Option<game::GameBoard> {
+pub(crate) fn load_board_from_path(path: &str) -> Option<game::GameBoard> {
     let data = match std::fs::metadata(path) {
         Ok(d) => d,
         Err(_) => {
@@ -121,17 +110,4 @@ pub(crate) fn load_from_path(path: &str) -> Option<game::GameBoard> {
         return None;
     }
     Some(load_board_from_file(path))
-}
-
-pub(crate) fn get_file_path() -> String {
-    let mut s = String::new();
-    println!("Please enter a file path:");
-    match std::io::stdin().read_line(&mut s) {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("Error reading stdIn: {e}");
-            return "default.txt".to_string();
-        }
-    };
-    s
 }
