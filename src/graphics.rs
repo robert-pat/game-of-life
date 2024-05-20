@@ -1,5 +1,5 @@
 use crate::game::{CellState, GameAction};
-use crate::{game, GAME_X, GAME_Y, save_load, text};
+use crate::{game, save_load, text, GAME_X, GAME_Y};
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use std::collections::VecDeque;
 use winit::dpi::{LogicalSize, PhysicalSize};
@@ -48,6 +48,7 @@ impl GUIGameState {
             GameAction::Play => {
                 if self.timing.1.elapsed() >= self.timing.0 {
                     self.tick();
+                    self.timing.1 = std::time::Instant::now();
                 }
             }
             GameAction::GrowCell => {
@@ -157,7 +158,6 @@ fn run_gui(
 
             if let Some(e) = state.pop(){
                 use ProgramEvent as GEvent;
-                use crate::text;
                 match e{
                     GEvent::ShowHelp => println!(
                         "Menu: ','->Play, '.'->Pause, 'g'->Grow, 'K'->Kill, '='->Step, 'S'->Save, 'L'->Load"

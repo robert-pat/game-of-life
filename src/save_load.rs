@@ -1,4 +1,4 @@
-use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, game, GAME_X, GAME_Y, text};
+use crate::{game, text, ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, GAME_X, GAME_Y};
 use core::str;
 
 //noinspection SpellCheckingInspection
@@ -74,7 +74,11 @@ pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
     let mut x_max: usize = 0;
     for row in file.split('\n').filter(|r| !r.contains('!')) {
         let mut count = 0; // Find the largest row to set the board size
-        row.chars().for_each(|c| {if c == '.' || c == 'O' {count += 1; }});
+        row.chars().for_each(|c| {
+            if c == '.' || c == 'O' {
+                count += 1;
+            }
+        });
         if count > x_max {
             x_max = count;
         }

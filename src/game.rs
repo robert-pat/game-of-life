@@ -1,5 +1,6 @@
 use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER};
 use std::fmt::Formatter;
+
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum GameAction {
     Step,
@@ -99,6 +100,7 @@ impl GameBoard {
                             S::Dead
                         }
                     }
+
                     S::Dead => {
                         if neighbors == 3 {
                             S::Alive
@@ -118,13 +120,10 @@ impl GameBoard {
 }
 impl std::fmt::Display for GameBoard {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut s: String = String::new();
         for row in self.space.iter() {
-            s.push_str(format!("{:?}", row).as_str());
-            s.push('\n');
+            writeln!(f, "{:?}", row)?
         }
-        s.pop(); //Remove the last trailing new line
-        write!(f, "{}", s)
+        Ok(())
     }
 }
 impl PartialEq for GameBoard {
@@ -158,12 +157,11 @@ pub fn get_neighbors(board: &GameBoard, x: usize, y: usize) -> Vec<(usize, usize
         (x, y + 1),
         (x + 1, y + 1),
     ];
-    points.retain(|point| point.0 >= 0 && point.0 <= x_m && point.1 >= 0 && point.1 <= y_m);
-    let mut neighbors = Vec::with_capacity(points.len());
-    for p in points {
-        neighbors.push((p.0 as usize, p.1 as usize));
-    }
-    neighbors
+    points.retain(|p| (0..=x_m).contains(&p.0) && (0..=y_m).contains(&p.1));
+    points
+        .into_iter()
+        .map(|(a, b)| (a as usize, b as usize))
+        .collect()
 }
 /// Returns the next iteration of the given board, w/ the same dimensions
 fn update_board(old_board: &GameBoard) -> GameBoard {

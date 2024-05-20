@@ -1,6 +1,6 @@
 use crate::game;
 use crate::game::GameAction;
-use crate::{GAME_X, GAME_Y, save_load};
+use crate::{save_load, GAME_X, GAME_Y};
 use lazy_static::lazy_static;
 use regex::Regex;
 pub(crate) fn text() -> ! {
