@@ -8,7 +8,7 @@ pub(crate) fn text() -> ! {
     let start = initialize_board();
     run_command_line(start);
 }
-fn initialize_board() -> game::GameBoard {
+fn initialize_board() -> game::GameBoardOld {
     let std_in = std::io::stdin();
     println!("Start (m)anually or (l)oad from file? (\"Enter\" to skip)");
 
@@ -21,14 +21,14 @@ fn initialize_board() -> game::GameBoard {
             save_load::load_board_from_file(p.trim())
         }
         "m" => {
-            let mut new_board = game::GameBoard::new(GAME_X, GAME_Y);
+            let mut new_board = game::GameBoardOld::new(GAME_X, GAME_Y);
             new_board.set_cells(get_coordinates(&std_in), game::CellState::Alive);
             new_board
         }
-        _ => game::GameBoard::new(GAME_X, GAME_Y),
+        _ => game::GameBoardOld::new(GAME_X, GAME_Y),
     }
 }
-fn run_command_line(mut board: game::GameBoard) -> ! {
+fn run_command_line(mut board: game::GameBoardOld) -> ! {
     let std_in = std::io::stdin();
 
     loop {
@@ -62,7 +62,7 @@ fn run_command_line(mut board: game::GameBoard) -> ! {
 }
 
 /// Saves the board to the specified file
-fn user_save_board(board: &game::GameBoard) {
+fn user_save_board(board: &game::GameBoardOld) {
     println!("Where would you like to save the board?");
     let p = get_file_path();
     save_load::save_board(p.trim(), board);
@@ -70,7 +70,7 @@ fn user_save_board(board: &game::GameBoard) {
 
 /// Prompts a user to pick cells to change on the board & changes them to the specified Status
 /// Allows for both file reading and manually typing in cells
-pub(crate) fn prompt_user_to_change_cells(board: &mut game::GameBoard, status: game::CellState) {
+pub(crate) fn prompt_user_to_change_cells(board: &mut game::GameBoardOld, status: game::CellState) {
     let std_in = std::io::stdin();
     println!("(t)ype in coordinates or (r)ead from a file?");
 
@@ -87,7 +87,7 @@ pub(crate) fn prompt_user_to_change_cells(board: &mut game::GameBoard, status: g
     }
 }
 /// Prints the board to the terminal, replacing previous text if replace_prev is true
-fn display_next_iteration(board: &game::GameBoard, replace_prev: bool, gen: i32) {
+fn display_next_iteration(board: &game::GameBoardOld, replace_prev: bool, gen: i32) {
     if replace_prev {
         for _ in 0..=board.y_max {
             print!("{}", ansi_escapes::CursorPrevLine);

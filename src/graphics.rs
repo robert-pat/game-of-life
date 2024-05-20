@@ -1,4 +1,4 @@
-use crate::game::{CellState, GameAction};
+use crate::game::CellState;
 use crate::{game, save_load, text, GAME_X, GAME_Y};
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use std::collections::VecDeque;
@@ -7,58 +7,84 @@ use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
+// TODO: better name
+struct GameTiming {
+    last_step: std::time::Instant,
+    step_length: std::time::Duration,
+}
+impl GameTiming {
+    fn new(len: std::time::Duration, last: std::time::Instant) -> Self {
+        GameTiming {
+            last_step: last,
+            step_length: len,
+        }
+    }
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum GUIGameAction {
+    Step,
+    Paused,
+    Play,
+    GrowCell,
+    KillCell,
+}
+impl TryFrom<game::GameAction> for GUIGameAction {
+    type Error = ();
+    fn try_from(value: game::GameAction) -> Result<Self, Self::Error> {
+        match value {
+            game::GameAction::GrowCell => Ok(GUIGameAction::GrowCell),
+            game::GameAction::KillCell => Ok(GUIGameAction::KillCell),
+            game::GameAction::Paused => Ok(GUIGameAction::Paused),
+            game::GameAction::Play => Ok(GUIGameAction::Play),
+            game::GameAction::Step => Ok(GUIGameAction::Step),
+            _ => Err(())
+        }
+    }
+}
 pub(crate) struct GUIGameState {
-    pub(crate) board: game::GameBoard,
-    #[allow(unused)] // Shouldn't need to read the previous board
-    prev_board: game::GameBoard,
-    current_action: Option<GameAction>,
+    pub(crate) board: game::Game,
+    current_action: Option<GUIGameAction>,
     size_of_cell: (u32, u32),
-    timing: (std::time::Duration, std::time::Instant),
+    timing: GameTiming,
 }
 impl GUIGameState {
     pub(crate) fn new(size: (usize, usize), pixels_per_cell: (u32, u32)) -> Self {
         GUIGameState {
-            board: game::GameBoard::new(size.0, size.1),
-            prev_board: game::GameBoard::new(size.0, size.1),
+            board: game::Game::new(size.0, size.1),
             current_action: None,
             size_of_cell: pixels_per_cell,
-            timing: (
+            timing: GameTiming::new(
                 std::time::Duration::from_millis(200),
                 std::time::Instant::now(),
             ),
         }
     }
     pub(crate) fn tick(&mut self) {
-        std::mem::swap(&mut self.board, &mut self.prev_board);
-        self.prev_board.update_to(&mut self.board);
+        self.board.step(1);
     }
-    pub(crate) fn load_new_board(&mut self, new: game::GameBoard) {
-        let (b1, b2) = (new.clone(), new);
-        self.board = b1;
-        self.prev_board = b2;
-        assert!(self.board == self.prev_board); //assert_eq!() requires std::fmt::Debug ??
+    pub(crate) fn load_new_board(&mut self, new: game::Game) {
+        self.board = new;
     }
-    pub(crate) fn consumer_current_event(&mut self) {
+    pub(crate) fn consume_current_event(&mut self) {
         if self.current_action.is_none() {
             return;
         }
         match self.current_action.unwrap() {
-            GameAction::Step => self.tick(),
-            GameAction::Paused => {}
-            GameAction::Play => {
-                if self.timing.1.elapsed() >= self.timing.0 {
+            GUIGameAction::Step => self.tick(),
+            GUIGameAction::Paused => return,
+            GUIGameAction::Play => {
+                if self.timing.last_step.elapsed() >= self.timing.step_length {
                     self.tick();
-                    self.timing.1 = std::time::Instant::now();
+                    self.timing.last_step = std::time::Instant::now();
                 }
             }
-            GameAction::GrowCell => {
-                text::prompt_user_to_change_cells(&mut self.board, CellState::Alive)
+            GUIGameAction::GrowCell => {
+                // text::prompt_user_to_change_cells(&mut self.board, CellState::Alive)
+                todo!("need to update text functions and/or remove functionality")
             }
-            GameAction::KillCell => {
-                text::prompt_user_to_change_cells(&mut self.board, CellState::Dead)
-            }
-            GameAction::Failed | GameAction::PrintBoard | GameAction::Save | GameAction::Quit => {
-                eprintln!("Attempted to consume GameAction that's invalid for GUI!");
+            GUIGameAction::KillCell => {
+                // text::prompt_user_to_change_cells(&mut self.board, CellState::Dead)
+                todo!("need to update text functions and/or remove functionality")
             }
         }
         self.current_action = None;
@@ -99,17 +125,19 @@ impl ProgramManager {
         self.to_process.pop_front()
     }
 }
+
 const RENDERED_CELL_SIZE: (u32, u32) = (8u32, 8u32);
 const WINDOW_SIZE: PhysicalSize<u32> = PhysicalSize::new(
     GAME_X as u32 * RENDERED_CELL_SIZE.0,
     GAME_Y as u32 * RENDERED_CELL_SIZE.1,
 );
-const GAME_ACTIONS_TO_REMOVE: [GameAction; 2] = [GameAction::Quit, GameAction::Save];
+
 /// Entry point for GUI control and handling of the application
 /// The program will run
-pub(crate) fn gui(start: Option<game::GameBoard>) -> ! {
+pub(crate) fn gui(start: Option<game::Game>) {
     let mut game = GUIGameState::new((GAME_X, GAME_Y), RENDERED_CELL_SIZE);
     let (mut pixels, window, event_loop) = gui_init(WINDOW_SIZE);
+
     initial_gui_draw(&mut pixels);
     match pixels.render() {
         Ok(_) => {}
@@ -118,8 +146,12 @@ pub(crate) fn gui(start: Option<game::GameBoard>) -> ! {
     if let Some(starting_board) = start {
         game.load_new_board(starting_board);
     }
+    println!("Controls: , -> Play, . -> Pause, g -> Grow, k -> Kill, = -> Step");
+    println!("s -> Save, h -> Help, l -> Load, q -> Quit");
+
     run_gui(event_loop, window, pixels, game, ProgramManager::new());
 }
+
 fn gui_init(size: PhysicalSize<u32>) -> (Pixels, Window, EventLoop<()>) {
     let event_loop = EventLoop::new();
     let window = {
@@ -147,35 +179,32 @@ fn run_gui(
     mut pixels: Pixels,
     mut game: GUIGameState,
     mut state: ProgramManager,
-) -> ! {
+) {
     l.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
-            if game.current_action.is_some(){
-                assert!(!GAME_ACTIONS_TO_REMOVE.contains(&game.current_action.unwrap()));
-            }
-
-            game.consumer_current_event();
+            game.consume_current_event(); // handle the game events
 
             if let Some(e) = state.pop(){
-                use ProgramEvent as GEvent;
                 match e{
-                    GEvent::ShowHelp => println!(
+                    ProgramEvent::ShowHelp => println!(
                         "Menu: ','->Play, '.'->Pause, 'g'->Grow, 'K'->Kill, '='->Step, 'S'->Save, 'L'->Load"
                     ),
-                    GEvent::SaveBoard => {
-                        let path = text::get_file_path();
-                        save_load::save_board(path.trim(), &game.board);
+                    ProgramEvent::SaveBoard => {
+                        let _path = text::get_file_path();
+                        // save_load::save_board(path.trim(), &game.board);
+                        todo!("add saving / loading support for new game struct")
                     },
-                    GEvent::LoadBoard => {
+                    ProgramEvent::LoadBoard => {
                         let path = text::get_file_path();
-                        if let Some(b) = save_load::load_board_from_path(path.trim()){
-                            game.load_new_board(b);
+                        if let Some(_b) = save_load::load_board_from_path(path.trim()){
+                            // game.load_new_board(b);
+                            todo!("add loading new board struct from path")
                         }
                         else{
                             eprintln!("Couldn't load board!");
                         }
                     },
-                    GEvent::ExitApplication => *control_flow = ControlFlow::Exit,
+                    ProgramEvent::ExitApplication => *control_flow = ControlFlow::Exit,
                 }
             }
 
@@ -192,11 +221,11 @@ fn run_gui(
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
             WindowEvent::KeyboardInput { input, .. } if input.virtual_keycode.is_some() => {
                 match input.virtual_keycode.unwrap() {
-                    VirtualKeyCode::Comma => game.current_action = Some(GameAction::Play),
-                    VirtualKeyCode::Period => game.current_action = Some(GameAction::Paused),
-                    VirtualKeyCode::G => game.current_action = Some(GameAction::GrowCell),
-                    VirtualKeyCode::K => game.current_action = Some(GameAction::KillCell),
-                    VirtualKeyCode::Equals => game.current_action = Some(GameAction::Step),
+                    VirtualKeyCode::Comma => game.current_action = Some(GUIGameAction::Play),
+                    VirtualKeyCode::Period => game.current_action = Some(GUIGameAction::Paused),
+                    VirtualKeyCode::G => game.current_action = Some(GUIGameAction::GrowCell),
+                    VirtualKeyCode::K => game.current_action = Some(GUIGameAction::KillCell),
+                    VirtualKeyCode::Equals => game.current_action = Some(GUIGameAction::Step),
 
                     VirtualKeyCode::S => state.add_event_ignore(ProgramEvent::SaveBoard),
                     VirtualKeyCode::H => state.add_event_ignore(ProgramEvent::ShowHelp),
@@ -222,19 +251,23 @@ fn initial_gui_draw(pixels: &mut Pixels) {
         pixel.copy_from_slice(&color);
     }
 }
-fn draw_board(board: &game::GameBoard, pixels: &mut Pixels, alignment: (u32, u32)) {
+fn draw_board(board: &game::Game, pixels: &mut Pixels, alignment: (u32, u32)) {
     const PADDING: u32 = 2;
     const BLACK: [u8; 4] = [0; 4];
     const WHITE: [u8; 4] = [200; 4];
+
     for (idx, pixel) in pixels.frame_mut().chunks_exact_mut(4).enumerate() {
         let (x, y) = (
             idx as u32 % WINDOW_SIZE.width,
             idx as u32 / WINDOW_SIZE.width,
         );
-        let (c_row, c_col) = (x / alignment.0, y / alignment.1);
+
+        // convert physical pixel coordinate into cell coordinate
+        // also idk how this works exactly (comment written after code)
+        let (cell_row, cell_col) = (x / alignment.0, y / alignment.1);
         let color = {
             #[allow(clippy::if_same_then_else)] // readability? could change later
-            if board.get(c_row as usize, c_col as usize) == CellState::Dead {
+            if board[(cell_row as usize, cell_col as usize)] == CellState::Dead {
                 BLACK
             } else if x % alignment.0 <= PADDING || y % alignment.1 <= PADDING {
                 BLACK

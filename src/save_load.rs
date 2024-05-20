@@ -13,7 +13,7 @@ pub fn read_coords_from_file(path: &str) -> Vec<(usize, usize)> {
 }
 /// Writes the given game board to the specified file.
 /// This will replace the file if it already exists
-pub fn save_board(path: &str, board: &game::GameBoard) {
+pub fn save_board(path: &str, board: &game::GameBoardOld) {
     let mut contents: String = String::new();
 
     for row in &board.space {
@@ -33,13 +33,13 @@ pub fn save_board(path: &str, board: &game::GameBoard) {
 /// Loads a game board from a file.
 /// If the file is improperly formatted, it will return an empty board.
 /// Failing to load the board is logged to std err
-pub fn load_board_from_file(path: &str) -> game::GameBoard {
+pub fn load_board_from_file(path: &str) -> game::GameBoardOld {
     let mut constructed_board: Vec<Vec<game::CellState>> = Vec::new();
     let contents = match std::fs::read_to_string(path) {
         Ok(contents) => contents,
         Err(_) => {
             eprintln!("Failed to load board from file");
-            return game::GameBoard::new(GAME_X, GAME_Y);
+            return game::GameBoardOld::new(GAME_X, GAME_Y);
         }
     };
 
@@ -58,16 +58,23 @@ pub fn load_board_from_file(path: &str) -> game::GameBoard {
         constructed_board.push(constructed_row);
     }
 
-    game::GameBoard {
+    game::GameBoardOld {
         x_max: constructed_board[0].len(),
         y_max: constructed_board.len(),
         space: constructed_board, // last to avoid borrowing after move
     }
 }
 
+pub fn load_board_from_file_new(path: &str) -> game::Game {
+    let old_board = load_board_from_file(path);
+    let mut new = game::Game::new(old_board.x_max, old_board.y_max);
+    assert!(new.clone_from_old(&old_board).is_ok());
+    new
+}
+
 /// Converts a raw text board from conwaylife.com into internal game representation
 #[allow(unused)]
-pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
+pub fn convert_wiki_to_board(path: &str) -> game::GameBoardOld {
     // Load the text from the file, comments are marked w/ "!"
     let mut file = std::fs::read_to_string(path).unwrap();
 
@@ -84,7 +91,7 @@ pub fn convert_wiki_to_board(path: &str) -> game::GameBoard {
         }
     }
 
-    let mut board = game::GameBoard::new(x_max, file.lines().count());
+    let mut board = game::GameBoardOld::new(x_max, file.lines().count());
     for (y, row) in file.split('\n').filter(|r| !r.contains('!')).enumerate() {
         for (x, c) in row.chars().enumerate() {
             match c {
@@ -103,7 +110,7 @@ pub fn create_save_from_wiki(path: &str) {
     save_board(path, &board); // Write the board to the original file
 }
 
-pub(crate) fn load_board_from_path(path: &str) -> Option<game::GameBoard> {
+pub(crate) fn load_board_from_path(path: &str) -> Option<game::GameBoardOld> {
     let data = match std::fs::metadata(path) {
         Ok(d) => d,
         Err(_) => {

@@ -10,7 +10,7 @@ use crate::{GAME_X, GAME_Y};
 
 #[test]
 pub fn file_io_test() {
-    let mut board = game::GameBoard::new(10, 10);
+    let mut board = game::GameBoardOld::new(10, 10);
     let cells = vec![
         (0, 0),
         (1, 1),
@@ -31,7 +31,7 @@ pub fn file_io_test() {
 }
 #[test]
 fn check_all_neighbor_counts() {
-    let board = game::GameBoard::new(GAME_X, GAME_Y);
+    let board = game::GameBoardOld::new(GAME_X, GAME_Y);
     for y in 0..board.y_max {
         for x in 0..board.x_max {
             let count = game::get_neighbors(&board, x, y).len();
@@ -49,7 +49,7 @@ fn check_all_neighbor_counts() {
 
 #[test]
 pub fn mini_find_neighbors_test() {
-    let board = game::GameBoard::new(5, 5);
+    let board = game::GameBoardOld::new(5, 5);
     let cells = [
         (0, 0),
         (0, board.y_max),
@@ -75,7 +75,7 @@ pub fn mini_find_neighbors_test() {
 }
 #[test]
 pub fn dead_board_test() {
-    let mut board = game::GameBoard::new(10, 10);
+    let mut board = game::GameBoardOld::new(10, 10);
     assert!(!board.has_alive_cells());
 
     board.set(5, 5, game::CellState::Alive);
@@ -84,7 +84,7 @@ pub fn dead_board_test() {
 #[test]
 /// Test the neighboring cell code
 pub fn print_all_raw_neighbors() {
-    let board = game::GameBoard::new(5, 5);
+    let board = game::GameBoardOld::new(5, 5);
     let mut s = String::with_capacity(25 * 40); // ~40 chars per cell ?
     for y in 0..=board.y_max {
         for x in 0..=board.x_max {
@@ -97,7 +97,7 @@ pub fn print_all_raw_neighbors() {
 }
 #[test]
 pub fn display_board_rewriting() {
-    let mut board = game::GameBoard::new(10, 10);
+    let mut board = game::GameBoardOld::new(10, 10);
 
     println!("{}", board);
     for _ in 0..board.y_max {

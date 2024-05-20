@@ -2,6 +2,7 @@ use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER};
 use std::fmt::Formatter;
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
+#[allow(unused)]
 pub enum GameAction {
     Step,
     GrowCell,
@@ -39,14 +40,136 @@ impl std::fmt::Debug for CellState {
         write!(f, "{}", <CellState as Into<char>>::into(*self))
     }
 }
+
+/// This is the new type representing a board playing the Game of Life.
+/// The old code is left untill more refactoring can happen, but using the new
+/// one is recommoned.
+/// 
+/// The GUI is updated to use the new one.
+#[derive(Debug, Clone)]
+pub struct Game {
+    x_max: usize,
+    y_max: usize,
+    current: Vec<CellState>,
+    previous: Vec<CellState>,
+}
+impl Game {
+    pub fn new(x: usize, y: usize) -> Self {
+        Game {
+            x_max: x,
+            y_max: y,
+            current: vec![CellState::Dead; x * y],
+            previous: vec![CellState::Dead; x * y],
+        }
+    }
+    #[allow(unused)]
+    pub fn get(&self, x: usize, y: usize) -> Option<CellState> {
+        if !(0..self.x_max).contains(&x) || !(0..self.y_max).contains(&y) {
+            return None;
+        }
+        Some(self.current[y * self.y_max + x])
+    }
+    #[allow(unused)]
+    pub fn set(&mut self, x: usize, y: usize, cell: CellState) {
+        assert!((0..self.x_max).contains(&x) && (0..self.y_max).contains(&y));
+        self.current[y * self.y_max + x] = cell;
+    }
+    #[allow(unused)]
+    pub fn set_many(&mut self, pos: &[(usize, usize)], cells: &[CellState]) {
+        assert_eq!(pos.len(), cells.len());
+        for (p, c) in pos.iter().zip(cells) {
+            let (x, y) = p;
+            self.current[y * self.y_max + x] = *c;
+        }
+    }
+    #[allow(unused)]
+    pub fn clear(&mut self) {
+        self.current.iter_mut().for_each(|c| *c = CellState::Dead);
+        self.previous.iter_mut().for_each(|c| *c = CellState::Dead);
+    }
+    fn iterate(&mut self) {
+        let (x_max, y_max) = (self.x_max as i32, self.y_max as i32);
+        for (int_idx, cell) in self.current.iter().enumerate() {
+            let (x, y) = ((int_idx % self.y_max) as i32, (int_idx / self.y_max) as i32);
+            let mut neighbors = vec![
+                (x - 1, y - 1),
+                (x, y - 1),
+                (x + 1, y - 1),
+                (x - 1, y),
+                (x + 1, y),
+                (x - 1, y + 1),
+                (x, y + 1),
+                (x + 1, y + 1),
+            ];
+            neighbors.retain(|(x, y)| (0..x_max).contains(x) && (0..y_max).contains(y));
+            let alive_neighbors: usize = neighbors
+                .into_iter()
+                .map(|(x, y)| self[(x as usize, y as usize)])
+                .map(|cell| if cell == CellState::Alive { 1 } else { 0 })
+                .sum();
+
+            self.previous[int_idx] = match cell {
+                CellState::Dead if alive_neighbors == 3 => CellState::Alive,
+                CellState::Alive if alive_neighbors == 2 => CellState::Alive,
+                CellState::Alive if alive_neighbors == 3 => CellState::Alive,
+                _ => CellState::Dead,
+            };
+        }
+        std::mem::swap(&mut self.current, &mut self.previous);
+    }
+    pub fn step(&mut self, steps: usize) {
+        for _ in 0..steps {
+            self.iterate();
+        }
+    }
+    pub fn clone_from_old(&mut self, old: &GameBoardOld) -> Result<(), ()> {
+        if self.x_max != old.x_max || self.y_max != old.y_max {
+            return Err(());
+        }
+        for (index, cell) in self.current.iter_mut().enumerate() {
+            let (x, y) = (index % self.y_max, index / self.y_max);
+            *cell = old.get(x, y);
+        }
+        Ok(())
+    }
+}
+impl std::ops::Index<(usize, usize)> for Game {
+    type Output = CellState;
+    fn index(&self, index: (usize, usize)) -> &Self::Output {
+        let (x, y) = index;
+
+        assert!((0..self.x_max).contains(&x) && (0..self.y_max).contains(&y));
+        &self.current[self.y_max * y + x]
+    }
+}
+impl std::ops::IndexMut<(usize, usize)> for Game {
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
+        let (x, y) = index;
+
+        assert!((0..self.x_max).contains(&x) && (0..self.y_max).contains(&y));
+        &mut self.current[self.y_max * y + x]
+    }
+}
+impl std::cmp::PartialEq for Game {
+    fn eq(&self, other: &Self) -> bool {
+        if self.x_max != other.x_max {
+            return false;
+        }
+        if self.y_max != other.y_max {
+            return false;
+        }
+        self.current == other.current
+    }
+}
+
 #[derive(Clone)]
-pub struct GameBoard {
+pub struct GameBoardOld {
     pub space: Vec<Vec<CellState>>,
     pub x_max: usize,
     pub y_max: usize,
 }
 #[allow(unused)]
-impl GameBoard {
+impl GameBoardOld {
     /// Gets the Status of a specific cell on the board
     pub fn get(&self, x: usize, y: usize) -> CellState {
         self.space[y % self.y_max][x % self.x_max]
@@ -86,7 +209,7 @@ impl GameBoard {
             }
         }
     }
-    pub(crate) fn update_to(&self, other: &mut GameBoard) {
+    pub(crate) fn update_to(&self, other: &mut GameBoardOld) {
         other.clear();
         for (y, row) in self.space.iter().enumerate() {
             for (x, cell) in row.iter().enumerate() {
@@ -118,7 +241,7 @@ impl GameBoard {
         self.x_max = self.space[0].len();
     }
 }
-impl std::fmt::Display for GameBoard {
+impl std::fmt::Display for GameBoardOld {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for row in self.space.iter() {
             writeln!(f, "{:?}", row)?
@@ -126,7 +249,7 @@ impl std::fmt::Display for GameBoard {
         Ok(())
     }
 }
-impl PartialEq for GameBoard {
+impl PartialEq for GameBoardOld {
     fn eq(&self, other: &Self) -> bool {
         if self.y_max != other.y_max || self.x_max != other.x_max {
             return false;
@@ -141,7 +264,7 @@ impl PartialEq for GameBoard {
 }
 /// Returns a vector with the coordinates of all the given cell's neighbors
 /// If the given coordinates are outside of the board, it will return an empty vec
-pub fn get_neighbors(board: &GameBoard, x: usize, y: usize) -> Vec<(usize, usize)> {
+pub fn get_neighbors(board: &GameBoardOld, x: usize, y: usize) -> Vec<(usize, usize)> {
     /* Number of refactors this function has had: ||||||||
      * swear to god this has made me lose interest in this projects at least 3 times, I hate it so much
      * update: 10/26/2023 -> skill issue, its like much neater! */
@@ -164,8 +287,8 @@ pub fn get_neighbors(board: &GameBoard, x: usize, y: usize) -> Vec<(usize, usize
         .collect()
 }
 /// Returns the next iteration of the given board, w/ the same dimensions
-fn update_board(old_board: &GameBoard) -> GameBoard {
-    let mut new_board = GameBoard::new(old_board.x_max, old_board.y_max);
+fn update_board(old_board: &GameBoardOld) -> GameBoardOld {
+    let mut new_board = GameBoardOld::new(old_board.x_max, old_board.y_max);
     for (y, row) in old_board.space.iter().enumerate() {
         for (x, cell) in row.iter().enumerate() {
             let neighbors = num_alive_neighbors(old_board, x, y);
@@ -182,7 +305,7 @@ fn update_board(old_board: &GameBoard) -> GameBoard {
 }
 
 /// Counts the number of living neighbors a given cell has; as a usize
-pub fn num_alive_neighbors(board: &GameBoard, x: usize, y: usize) -> usize {
+pub fn num_alive_neighbors(board: &GameBoardOld, x: usize, y: usize) -> usize {
     let mut count: usize = 0;
     for cell in get_neighbors(board, x, y) {
         // Loop through neighbor cells
@@ -194,8 +317,8 @@ pub fn num_alive_neighbors(board: &GameBoard, x: usize, y: usize) -> usize {
     count
 }
 /// Returns the board after n iterations
-pub fn run_iterations(board: &GameBoard, n: usize) -> GameBoard {
-    let mut new_board: GameBoard = board.clone();
+pub fn run_iterations(board: &GameBoardOld, n: usize) -> GameBoardOld {
+    let mut new_board: GameBoardOld = board.clone();
     for _ in 0..n {
         new_board = update_board(&new_board);
     }
