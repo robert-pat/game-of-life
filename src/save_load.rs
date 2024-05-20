@@ -122,3 +122,15 @@ pub(crate) fn load_board_from_path(path: &str) -> Option<game::GameBoardOld> {
     }
     Some(load_board_from_file(path))
 }
+
+
+// The file format for these is still undecided, idk what to do with it
+#[allow(unused)]
+pub(crate) fn save_game(game: &game::Game, path: &str) {
+    let s = "Alive: ".to_string();
+    todo!()
+}
+#[allow(unused)]
+pub(crate) fn load_game(path: &str) -> game::Game {
+    todo!()
+}
