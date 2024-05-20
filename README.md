@@ -8,16 +8,15 @@ The code should be complete, but I haven't really tested any large or functional
 
 #### Overall To-dos:
 1) Properly handle text inputs for non-GameAction keyboard events (rn they run ~ twice)
-2) Have a better way to handle GameAction processing for the event loop
 3) Add a more expandable way to add additional keyboard actions into the loop
 4) Refactor & improve text-based experience
    1) More reliable functions in text::_ (Results, Options, etc.)
    2) Condensed commands, ideally have mode & arg in 1 read
    3) Transition GUI to use new, nice text::_ functions (once available)
 5) Redo the test suite, make them actually useful / with asserts
+6) Have the window update independently of the events, so the game will run when played
 
 
 ----
 ### Refactorings:
 1) Revamp the legacy text control mode into a better version
-2) Move improperly added GameActions to a different control method for text
