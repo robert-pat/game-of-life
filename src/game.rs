@@ -44,7 +44,7 @@ impl std::fmt::Debug for CellState {
 /// This is the new type representing a board playing the Game of Life.
 /// The old code is left untill more refactoring can happen, but using the new
 /// one is recommoned.
-/// 
+///
 /// The GUI is updated to use the new one.
 #[derive(Debug, Clone)]
 pub struct Game {
@@ -89,8 +89,11 @@ impl Game {
     }
     fn iterate(&mut self) {
         let (x_max, y_max) = (self.x_max as i32, self.y_max as i32);
-        for (int_idx, cell) in self.current.iter().enumerate() {
-            let (x, y) = ((int_idx % self.y_max) as i32, (int_idx / self.y_max) as i32);
+        for (cell_index, cell) in self.current.iter().enumerate() {
+            let (x, y) = (
+                (cell_index % self.y_max) as i32,
+                (cell_index / self.y_max) as i32,
+            );
             let mut neighbors = vec![
                 (x - 1, y - 1),
                 (x, y - 1),
@@ -108,7 +111,7 @@ impl Game {
                 .map(|cell| if cell == CellState::Alive { 1 } else { 0 })
                 .sum();
 
-            self.previous[int_idx] = match cell {
+            self.previous[cell_index] = match cell {
                 CellState::Dead if alive_neighbors == 3 => CellState::Alive,
                 CellState::Alive if alive_neighbors == 2 => CellState::Alive,
                 CellState::Alive if alive_neighbors == 3 => CellState::Alive,

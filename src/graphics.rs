@@ -37,7 +37,7 @@ impl TryFrom<game::GameAction> for GUIGameAction {
             game::GameAction::Paused => Ok(GUIGameAction::Paused),
             game::GameAction::Play => Ok(GUIGameAction::Play),
             game::GameAction::Step => Ok(GUIGameAction::Step),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
