@@ -57,7 +57,7 @@ impl std::fmt::Display for CellState {
 /// This is the new type representing a board playing the Game of Life.
 /// The old code is left until more refactoring can happen, but using the new
 /// one is recommended.
-/// 
+///
 /// Note that valid cell positions are 0..x_max and 0..y_max, not including
 /// x_max or y_max. (They are akin to length w/ indexing starting at 0).
 ///
@@ -93,7 +93,7 @@ impl Game {
     /// The 'cells' slice maybe either be len 1 (every position will be set to the same),
     /// or the same length as the coordinates (each position is set to the corresponding
     /// state).
-    /// 
+    ///
     /// If cells.len() != 1 or pos.len(), the function will panic!
     pub fn set_many(&mut self, pos: &[(usize, usize)], cells: &[CellState]) {
         if cells.len() != 1 {

@@ -3,7 +3,7 @@ use crate::{game, save_load, text, GAME_X, GAME_Y};
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use std::collections::VecDeque;
 use winit::dpi::{LogicalSize, PhysicalSize};
-use winit::event::{Event, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
@@ -219,6 +219,11 @@ fn run_gui(
         Event::WindowEvent { window_id, event } if window_id == window.id() => match event {
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
             WindowEvent::KeyboardInput { input, .. } if input.virtual_keycode.is_some() => {
+                // prevent double pressing, NOTE: this prob needs to be changed later !!!
+                if input.state == ElementState::Released {
+                    return;
+                }
+                
                 match input.virtual_keycode.unwrap() {
                     VirtualKeyCode::Comma => game.current_action = Some(GUIGameAction::Play),
                     VirtualKeyCode::Period => game.current_action = Some(GUIGameAction::Paused),
