@@ -1,5 +1,6 @@
-use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER};
 use std::fmt::Formatter;
+
+use crate::{ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER};
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 #[allow(unused)]
@@ -34,22 +35,37 @@ impl From<CellState> for char {
     }
 }
 impl std::fmt::Debug for CellState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // Normal programming language with sensical syntax & errors:
         // "let c: char = *self.into();" failed, as did just *self.into(),
         write!(f, "{}", <CellState as Into<char>>::into(*self))
     }
 }
+impl std::fmt::Display for CellState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                CellState::Alive => ALIVE_STATUS_CHARACTER,
+                CellState::Dead => DEAD_STATUS_CHARACTER,
+            }
+        )
+    }
+}
 
 /// This is the new type representing a board playing the Game of Life.
-/// The old code is left untill more refactoring can happen, but using the new
-/// one is recommoned.
+/// The old code is left until more refactoring can happen, but using the new
+/// one is recommended.
+/// 
+/// Note that valid cell positions are 0..x_max and 0..y_max, not including
+/// x_max or y_max. (They are akin to length w/ indexing starting at 0).
 ///
 /// The GUI is updated to use the new one.
 #[derive(Debug, Clone)]
 pub struct Game {
-    x_max: usize,
-    y_max: usize,
+    pub(crate) x_max: usize,
+    pub(crate) y_max: usize,
     current: Vec<CellState>,
     previous: Vec<CellState>,
 }
@@ -74,12 +90,23 @@ impl Game {
         assert!((0..self.x_max).contains(&x) && (0..self.y_max).contains(&y));
         self.current[y * self.y_max + x] = cell;
     }
-    #[allow(unused)]
+    /// The 'cells' slice maybe either be len 1 (every position will be set to the same),
+    /// or the same length as the coordinates (each position is set to the corresponding
+    /// state).
+    /// 
+    /// If cells.len() != 1 or pos.len(), the function will panic!
     pub fn set_many(&mut self, pos: &[(usize, usize)], cells: &[CellState]) {
-        assert_eq!(pos.len(), cells.len());
-        for (p, c) in pos.iter().zip(cells) {
+        if cells.len() != 1 {
+            assert_eq!(pos.len(), cells.len());
+            for (p, c) in pos.iter().zip(cells) {
+                let (x, y) = p;
+                self.current[y * self.y_max + x] = *c;
+            }
+            return;
+        }
+        for p in pos.iter() {
             let (x, y) = p;
-            self.current[y * self.y_max + x] = *c;
+            self.current[y * self.y_max + x] = cells[0];
         }
     }
     #[allow(unused)]
@@ -135,6 +162,16 @@ impl Game {
         }
         Ok(())
     }
+    pub fn rows(&self) -> impl Iterator<Item = &[CellState]> + '_ {
+        self.current.chunks_exact(self.y_max)
+    }
+    pub fn replace_buffer(&mut self, new: Vec<CellState>) -> Result<(), ()> {
+        if new.len() != self.current.len() {
+            return Err(());
+        }
+        self.current = new;
+        Ok(())
+    }
 }
 impl std::ops::Index<(usize, usize)> for Game {
     type Output = CellState;
@@ -153,7 +190,7 @@ impl std::ops::IndexMut<(usize, usize)> for Game {
         &mut self.current[self.y_max * y + x]
     }
 }
-impl std::cmp::PartialEq for Game {
+impl PartialEq for Game {
     fn eq(&self, other: &Self) -> bool {
         if self.x_max != other.x_max {
             return false;
@@ -245,7 +282,7 @@ impl GameBoardOld {
     }
 }
 impl std::fmt::Display for GameBoardOld {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for row in self.space.iter() {
             writeln!(f, "{:?}", row)?
         }
@@ -266,11 +303,11 @@ impl PartialEq for GameBoardOld {
     }
 }
 /// Returns a vector with the coordinates of all the given cell's neighbors
-/// If the given coordinates are outside of the board, it will return an empty vec
+/// If the given coordinates are outside the board, it will return an empty vec
 pub fn get_neighbors(board: &GameBoardOld, x: usize, y: usize) -> Vec<(usize, usize)> {
     /* Number of refactors this function has had: ||||||||
-     * swear to god this has made me lose interest in this projects at least 3 times, I hate it so much
-     * update: 10/26/2023 -> skill issue, its like much neater! */
+     * swear to god this has made me lose interest in this project at least 3 times, I hate it so much
+     * update: 10/26/2023 -> skill issue, it's like much neater! */
     let (x, y) = (x as i32, y as i32);
     let (x_m, y_m) = (board.x_max as i32, board.y_max as i32);
     let mut points = vec![
@@ -307,7 +344,7 @@ fn update_board(old_board: &GameBoardOld) -> GameBoardOld {
     new_board
 }
 
-/// Counts the number of living neighbors a given cell has; as a usize
+/// Counts the number of living neighbors a given cell has; as usize
 pub fn num_alive_neighbors(board: &GameBoardOld, x: usize, y: usize) -> usize {
     let mut count: usize = 0;
     for cell in get_neighbors(board, x, y) {

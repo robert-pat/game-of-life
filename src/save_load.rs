@@ -1,3 +1,4 @@
+use crate::game::CellState;
 use crate::{game, text, ALIVE_STATUS_CHARACTER, DEAD_STATUS_CHARACTER, GAME_X, GAME_Y};
 use core::str;
 
@@ -34,7 +35,7 @@ pub fn save_board(path: &str, board: &game::GameBoardOld) {
 /// If the file is improperly formatted, it will return an empty board.
 /// Failing to load the board is logged to std err
 pub fn load_board_from_file(path: &str) -> game::GameBoardOld {
-    let mut constructed_board: Vec<Vec<game::CellState>> = Vec::new();
+    let mut constructed_board: Vec<Vec<CellState>> = Vec::new();
     let contents = match std::fs::read_to_string(path) {
         Ok(contents) => contents,
         Err(_) => {
@@ -44,11 +45,11 @@ pub fn load_board_from_file(path: &str) -> game::GameBoardOld {
     };
 
     for row in contents.split('\n') {
-        let mut constructed_row: Vec<game::CellState> = Vec::new();
+        let mut constructed_row: Vec<CellState> = Vec::new();
         for s in row.chars() {
             constructed_row.push(match s {
-                ALIVE_STATUS_CHARACTER => game::CellState::Alive,
-                DEAD_STATUS_CHARACTER => game::CellState::Dead,
+                ALIVE_STATUS_CHARACTER => CellState::Alive,
+                DEAD_STATUS_CHARACTER => CellState::Dead,
                 _ => {
                     eprintln!("Error parsing char from file: [{}]", s);
                     continue;
@@ -95,8 +96,8 @@ pub fn convert_wiki_to_board(path: &str) -> game::GameBoardOld {
     for (y, row) in file.split('\n').filter(|r| !r.contains('!')).enumerate() {
         for (x, c) in row.chars().enumerate() {
             match c {
-                '.' => board.set(x, y, game::CellState::Dead),
-                'O' => board.set(x, y, game::CellState::Alive),
+                '.' => board.set(x, y, CellState::Dead),
+                'O' => board.set(x, y, CellState::Alive),
                 _ => {}
             }
         }
@@ -123,13 +124,68 @@ pub(crate) fn load_board_from_path(path: &str) -> Option<game::GameBoardOld> {
     Some(load_board_from_file(path))
 }
 
-// The file format for these is still undecided, idk what to do with it
-#[allow(unused)]
-pub(crate) fn save_game(game: &game::Game, path: &str) {
-    let s = "Alive: ".to_string();
-    todo!()
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub(crate) enum SaveLoadError {
+    StringWrite,
+    FileWrite,
+    FileOpen,
+    EmptyFile,
+}
+impl From<std::fmt::Error> for SaveLoadError {
+    fn from(_: std::fmt::Error) -> Self {
+        SaveLoadError::StringWrite
+    }
+}
+impl From<std::io::Error> for SaveLoadError {
+    fn from(_: std::io::Error) -> Self {
+        SaveLoadError::FileWrite
+    }
 }
 #[allow(unused)]
-pub(crate) fn load_game(path: &str) -> game::Game {
-    todo!()
+pub(crate) fn save_game(game: &game::Game, path: &str) -> Result<(), SaveLoadError> {
+    use std::fmt::Write as fmtWrite;
+    use std::io::Write as ioWrite;
+
+    let mut f = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(path)
+        .unwrap();
+    let mut s = String::with_capacity(game.y_max * game.x_max);
+
+    for row in game.rows() {
+        for cell in row {
+            write!(s, "{}", *cell)?;
+        }
+        writeln!(s)?;
+    }
+    s.pop(); // remove last new line
+    write!(f, "{s}")?;
+    Ok(())
+}
+#[allow(unused)]
+pub(crate) fn load_game(path: &str) -> Result<game::Game, SaveLoadError> {
+    let mut f = match std::fs::read_to_string(path) {
+        Ok(f) => f,
+        Err(e) => return Err(SaveLoadError::FileOpen),
+    };
+    if f.lines().count() < 1 {
+        return Err(SaveLoadError::EmptyFile);
+    }
+
+    let y_max = f.lines().count();
+    let x_max = f.lines().next().unwrap().len();
+
+    let characters: Vec<CellState> = f
+        .chars()
+        .filter_map(|c| match c {
+            ALIVE_STATUS_CHARACTER => Some(CellState::Alive),
+            DEAD_STATUS_CHARACTER => Some(CellState::Dead),
+            _ => None,
+        })
+        .collect();
+
+    let mut game = game::Game::new(x_max, y_max);
+    game.replace_buffer(characters).unwrap();
+    Ok(game)
 }

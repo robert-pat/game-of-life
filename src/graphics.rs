@@ -79,12 +79,12 @@ impl GUIGameState {
                 }
             }
             GUIGameAction::GrowCell => {
-                // text::prompt_user_to_change_cells(&mut self.board, CellState::Alive)
-                todo!("need to update text functions and/or remove functionality")
+                let to_change = text::get_coordinates(&std::io::stdin());
+                self.board.set_many(&to_change, &[CellState::Alive; 1]);
             }
             GUIGameAction::KillCell => {
-                // text::prompt_user_to_change_cells(&mut self.board, CellState::Dead)
-                todo!("need to update text functions and/or remove functionality")
+                let to_change = text::get_coordinates(&std::io::stdin());
+                self.board.set_many(&to_change, &[CellState::Dead; 1]);
             }
         }
         self.current_action = None;
@@ -190,19 +190,18 @@ fn run_gui(
                         "Menu: ','->Play, '.'->Pause, 'g'->Grow, 'K'->Kill, '='->Step, 'S'->Save, 'L'->Load"
                     ),
                     ProgramEvent::SaveBoard => {
-                        let _path = text::get_file_path();
-                        // save_load::save_board(path.trim(), &game.board);
-                        todo!("add saving / loading support for new game struct")
+                        let path = text::get_file_path();
+                        match save_load::save_game(&game.board, &path) {
+                            Ok(_) => {},
+                            Err(e) => eprintln!("Issue saving board: {:?}", e),
+                        };
                     },
                     ProgramEvent::LoadBoard => {
                         let path = text::get_file_path();
-                        if let Some(_b) = save_load::load_board_from_path(path.trim()){
-                            // game.load_new_board(b);
-                            todo!("add loading new board struct from path")
-                        }
-                        else{
-                            eprintln!("Couldn't load board!");
-                        }
+                        match save_load::load_game(path.trim()) {
+                            Ok(b) => game.load_new_board(b),
+                            Err(e) => eprintln!("Couldn't load board: {:?}", e),
+                        };
                     },
                     ProgramEvent::ExitApplication => *control_flow = ControlFlow::Exit,
                 }
