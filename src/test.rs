@@ -7,6 +7,8 @@ use std::io::Write;
 use crate::save_load;
 #[cfg(test)]
 use crate::{GAME_X, GAME_Y};
+#[cfg(test)]
+use crate::game::CellState;
 
 #[test]
 pub fn file_io_test() {
@@ -23,7 +25,7 @@ pub fn file_io_test() {
         (8, 8),
         (9, 9),
     ];
-    board.set_cells(cells, game::CellState::Alive);
+    board.set_cells(cells, CellState::Alive);
     save_load::save_board("test-tmp.txt", &board);
 
     let loaded_board = save_load::load_board_from_file("test-tmp.txt");
@@ -78,7 +80,7 @@ pub fn dead_board_test() {
     let mut board = game::GameBoardOld::new(10, 10);
     assert!(!board.has_alive_cells());
 
-    board.set(5, 5, game::CellState::Alive);
+    board.set(5, 5, CellState::Alive);
     assert!(board.has_alive_cells());
 }
 #[test]
@@ -112,7 +114,19 @@ pub fn display_board_rewriting() {
             vec.push((x, y));
         }
     }
-    board.set_cells(vec, game::CellState::Alive);
+    board.set_cells(vec, CellState::Alive);
     print!("{}", board);
     if std::io::stdout().flush().is_ok() {}
+}
+
+#[test]
+fn new_board_updating() {
+    let mut board = game::Game::new(10, 10);
+    let cells = [(1, 1), (2, 2), (3, 3), (4, 4)];
+    board.set_many(&cells, &[CellState::Alive]);
+    
+    for _ in 0..3 {
+        eprintln!("{board}");
+        board.step(1);
+    }
 }

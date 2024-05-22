@@ -2,22 +2,18 @@ use crate::game::CellState;
 use crate::{game, save_load, text, GAME_X, GAME_Y};
 use pixels::{Pixels, PixelsBuilder, SurfaceTexture};
 use std::collections::VecDeque;
-use winit::dpi::{LogicalSize, PhysicalSize};
+use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
-// TODO: better name
-struct GameTiming {
-    last_step: std::time::Instant,
-    step_length: std::time::Duration,
+struct StepDelay {
+    prev_step: std::time::Instant,
+    delay: std::time::Duration,
 }
-impl GameTiming {
-    fn new(len: std::time::Duration, last: std::time::Instant) -> Self {
-        GameTiming {
-            last_step: last,
-            step_length: len,
-        }
+impl StepDelay {
+    fn can_step(&mut self) -> bool {
+        self.prev_step.elapsed() > self.delay
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,23 +40,32 @@ impl TryFrom<game::GameAction> for GUIGameAction {
 pub(crate) struct GUIGameState {
     pub(crate) board: game::Game,
     current_action: Option<GUIGameAction>,
-    size_of_cell: (u32, u32),
-    timing: GameTiming,
+    timing: StepDelay,
 }
 impl GUIGameState {
-    pub(crate) fn new(size: (usize, usize), pixels_per_cell: (u32, u32)) -> Self {
+    pub(crate) fn new(size: (usize, usize)) -> Self {
         GUIGameState {
             board: game::Game::new(size.0, size.1),
             current_action: None,
-            size_of_cell: pixels_per_cell,
-            timing: GameTiming::new(
-                std::time::Duration::from_millis(200),
-                std::time::Instant::now(),
-            ),
+            timing: StepDelay {
+                delay: std::time::Duration::from_millis(200),
+                prev_step: std::time::Instant::now(),
+            },
+        }
+    }
+    pub(crate) fn from_game(game: game::Game) -> Self {
+        GUIGameState {
+            board: game,
+            current_action: None,
+            timing: StepDelay {
+                delay: std::time::Duration::from_millis(200),
+                prev_step: std::time::Instant::now(),
+            },
         }
     }
     pub(crate) fn tick(&mut self) {
         self.board.step(1);
+        self.timing.prev_step = std::time::Instant::now();
     }
     pub(crate) fn load_new_board(&mut self, new: game::Game) {
         self.board = new;
@@ -73,9 +78,8 @@ impl GUIGameState {
             GUIGameAction::Step => self.tick(),
             GUIGameAction::Paused => return,
             GUIGameAction::Play => {
-                if self.timing.last_step.elapsed() >= self.timing.step_length {
+                if self.timing.can_step() {
                     self.tick();
-                    self.timing.last_step = std::time::Instant::now();
                 }
             }
             GUIGameAction::GrowCell => {
@@ -126,36 +130,77 @@ impl ProgramManager {
     }
 }
 
-const RENDERED_CELL_SIZE: (u32, u32) = (8u32, 8u32);
-const WINDOW_SIZE: PhysicalSize<u32> = PhysicalSize::new(
-    GAME_X as u32 * RENDERED_CELL_SIZE.0,
-    GAME_Y as u32 * RENDERED_CELL_SIZE.1,
-);
+#[derive(Debug)]
+struct DrawInformation {
+    screen_size: PhysicalSize<u32>,
+    cell_size: (u32, u32),
+    padding: u32,
+}
+impl DrawInformation {
+    #[allow(unused)]
+    fn index_to_pixel(&self, idx: usize) -> (u32, u32) {
+        (
+            idx as u32 % self.screen_size.width,
+            idx as u32 / self.screen_size.width,
+        )
+    }
+    #[warn(incomplete_features)]
+    fn index_to_cell(&self, idx: usize) -> Option<(usize, usize)> {
+        // pixel coordinates
+        let (x, y) = (
+            idx as u32 % self.screen_size.width,
+            idx as u32 / self.screen_size.width,
+        );
+        if x % (self.cell_size.0 + self.padding) <= self.padding
+            || y % (self.cell_size.1 + self.padding) <= self.padding
+        {
+            return None;
+        }
+
+        let (cell_x, cell_y) = (
+            x / (self.cell_size.0 + self.padding),
+            y / (self.cell_size.1 + self.padding),
+        );
+        Some((cell_x as usize, cell_y as usize))
+    }
+}
 
 /// Entry point for GUI control and handling of the application
 /// The program will run
 pub(crate) fn gui(start: Option<game::Game>) {
-    let mut game = GUIGameState::new((GAME_X, GAME_Y), RENDERED_CELL_SIZE);
-    let (mut pixels, window, event_loop) = gui_init(WINDOW_SIZE);
+    let game = match start {
+        Some(g) => GUIGameState::from_game(g),
+        None => GUIGameState::new((GAME_X, GAME_Y)),
+    };
 
-    initial_gui_draw(&mut pixels);
-    match pixels.render() {
+    const PIXELS_PER_CELL: (u32, u32) = (8u32, 8u32);
+    const PADDING: u32 = 2u32;
+    let draw_info = DrawInformation {
+        screen_size: PhysicalSize::new(
+            (game.board.x_max as u32) * (PIXELS_PER_CELL.0 + PADDING) + PADDING,
+            (game.board.y_max as u32) * (PIXELS_PER_CELL.1 + PADDING) + PADDING,
+        ),
+        cell_size: PIXELS_PER_CELL,
+        padding: PADDING,
+    };
+    let (mut p, w, e) = gui_init(draw_info.screen_size);
+    initial_gui_draw(&mut p, &draw_info);
+
+    match p.render() {
         Ok(_) => {}
         Err(e) => eprintln!("Error rendering pixels! {e}"),
     };
-    if let Some(starting_board) = start {
-        game.load_new_board(starting_board);
-    }
-    println!("Controls: , -> Play, . -> Pause, g -> Grow, k -> Kill, = -> Step");
-    println!("s -> Save, h -> Help, l -> Load, q -> Quit");
 
-    run_gui(event_loop, window, pixels, game, ProgramManager::new());
+    println!("Controls:");
+    println!(" , -> Play, . -> Pause, g -> Grow, k -> Kill, = -> Step, s -> Save, h -> Help, l -> Load, q -> Quit");
+
+    run_gui(e, w, p, game, ProgramManager::new(), draw_info);
 }
 
 fn gui_init(size: PhysicalSize<u32>) -> (Pixels, Window, EventLoop<()>) {
     let event_loop = EventLoop::new();
     let window = {
-        let size = LogicalSize::new(size.width as f64, size.height as f64);
+        // let size = LogicalSize::new(size.width as f64, size.height as f64);
         WindowBuilder::new()
             .with_title("Game of Life")
             .with_inner_size(size)
@@ -176,16 +221,17 @@ fn gui_init(size: PhysicalSize<u32>) -> (Pixels, Window, EventLoop<()>) {
 fn run_gui(
     l: EventLoop<()>,
     window: Window,
-    mut pixels: Pixels,
+    mut pixels: Pixels, // TODO: just move the code for gui_init here + idk
     mut game: GUIGameState,
     mut state: ProgramManager,
+    draw_info: DrawInformation,
 ) {
     l.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
             game.consume_current_event(); // handle the game events
 
             if let Some(e) = state.pop(){
-                match e{
+                match e {
                     ProgramEvent::ShowHelp => println!(
                         "Menu: ','->Play, '.'->Pause, 'g'->Grow, 'K'->Kill, '='->Step, 'S'->Save, 'L'->Load"
                     ),
@@ -206,11 +252,9 @@ fn run_gui(
                     ProgramEvent::ExitApplication => *control_flow = ControlFlow::Exit,
                 }
             }
-
-            window.request_redraw(); // This shouldn't be needed, but doesn't update w/o it
         }
         Event::RedrawRequested(id) if window.id() == id => {
-            draw_board(&game.board, &mut pixels, game.size_of_cell);
+            draw_board(&game.board, &mut pixels, &draw_info);
             match pixels.render(){
                 Ok(_) => {},
                 Err(e) => eprintln!("Error Rendering with Pixels: {e}"),
@@ -223,7 +267,6 @@ fn run_gui(
                 if input.state == ElementState::Released {
                     return;
                 }
-                
                 match input.virtual_keycode.unwrap() {
                     VirtualKeyCode::Comma => game.current_action = Some(GUIGameAction::Play),
                     VirtualKeyCode::Period => game.current_action = Some(GUIGameAction::Paused),
@@ -239,46 +282,38 @@ fn run_gui(
                     VirtualKeyCode::Escape => *control_flow = ControlFlow::Exit,
                     _ => {}
                 }
+                window.request_redraw();
             }
             _ => {}
         },
         _ => {}
     });
 }
-fn initial_gui_draw(pixels: &mut Pixels) {
+fn initial_gui_draw(pixels: &mut Pixels, info: &DrawInformation) {
     for (idx, pixel) in pixels.frame_mut().chunks_exact_mut(4).enumerate() {
-        let (x, y) = (
-            idx % WINDOW_SIZE.width as usize,
-            idx / WINDOW_SIZE.width as usize,
-        );
-        let color = [(x % 255) as u8, (y % 255) as u8, 128u8, 128u8];
+        let color = match info.index_to_cell(idx) {
+            // Some((x, y)) => [(x % 255) as u8, (y % 255) as u8, 128u8, 128u8],
+            Some((x, y)) => [(x % 2) as u8 * 128u8, (y % 2) as u8 * 128u8, 128u8, 128u8],
+            None => [0u8; 4],
+        };
         pixel.copy_from_slice(&color);
     }
 }
-fn draw_board(board: &game::Game, pixels: &mut Pixels, alignment: (u32, u32)) {
-    const PADDING: u32 = 2;
+
+#[warn(incomplete_features)]
+fn draw_board(board: &game::Game, pixels: &mut Pixels, draw_info: &DrawInformation) {
     const BLACK: [u8; 4] = [0; 4];
     const WHITE: [u8; 4] = [200; 4];
 
     for (idx, pixel) in pixels.frame_mut().chunks_exact_mut(4).enumerate() {
-        let (x, y) = (
-            idx as u32 % WINDOW_SIZE.width,
-            idx as u32 / WINDOW_SIZE.width,
-        );
+        if let Some((x, y)) = draw_info.index_to_cell(idx) {
+            match board[(x, y)] {
+                CellState::Alive => pixel.copy_from_slice(&WHITE),
+                CellState::Dead => pixel.copy_from_slice(&BLACK),
+            };
+            continue;
+        }
 
-        // convert physical pixel coordinate into cell coordinate
-        // also idk how this works exactly (comment written after code)
-        let (cell_row, cell_col) = (x / alignment.0, y / alignment.1);
-        let color = {
-            #[allow(clippy::if_same_then_else)] // readability? could change later
-            if board[(cell_row as usize, cell_col as usize)] == CellState::Dead {
-                BLACK
-            } else if x % alignment.0 <= PADDING || y % alignment.1 <= PADDING {
-                BLACK
-            } else {
-                WHITE
-            }
-        };
-        pixel.copy_from_slice(&color);
+        pixel.copy_from_slice(&BLACK);
     }
 }

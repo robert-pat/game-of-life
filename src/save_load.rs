@@ -111,19 +111,6 @@ pub fn create_save_from_wiki(path: &str) {
     save_board(path, &board); // Write the board to the original file
 }
 
-pub(crate) fn load_board_from_path(path: &str) -> Option<game::GameBoardOld> {
-    let data = match std::fs::metadata(path) {
-        Ok(d) => d,
-        Err(_) => {
-            return None;
-        }
-    };
-    if !data.is_file() {
-        return None;
-    }
-    Some(load_board_from_file(path))
-}
-
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum SaveLoadError {
     StringWrite,
@@ -174,7 +161,7 @@ pub(crate) fn load_game(path: &str) -> Result<game::Game, SaveLoadError> {
     }
 
     let y_max = f.lines().count();
-    let x_max = f.lines().next().unwrap().len();
+    let x_max = f.lines().next().unwrap().chars().count();
 
     let characters: Vec<CellState> = f
         .chars()

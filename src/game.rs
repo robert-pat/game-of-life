@@ -114,12 +114,17 @@ impl Game {
         self.current.iter_mut().for_each(|c| *c = CellState::Dead);
         self.previous.iter_mut().for_each(|c| *c = CellState::Dead);
     }
+    #[allow(unused)]
+    pub fn fill(&mut self) {
+        self.current.iter_mut().for_each(|c| *c = CellState::Alive);
+        self.previous.iter_mut().for_each(|c| *c = CellState::Alive);
+    }
     fn iterate(&mut self) {
         let (x_max, y_max) = (self.x_max as i32, self.y_max as i32);
         for (cell_index, cell) in self.current.iter().enumerate() {
             let (x, y) = (
-                (cell_index % self.y_max) as i32,
-                (cell_index / self.y_max) as i32,
+                (cell_index % self.x_max) as i32,
+                (cell_index / self.x_max) as i32,
             );
             let mut neighbors = vec![
                 (x - 1, y - 1),
@@ -157,17 +162,17 @@ impl Game {
             return Err(());
         }
         for (index, cell) in self.current.iter_mut().enumerate() {
-            let (x, y) = (index % self.y_max, index / self.y_max);
+            let (x, y) = (index % self.x_max, index / self.x_max);
             *cell = old.get(x, y);
         }
         Ok(())
     }
     pub fn rows(&self) -> impl Iterator<Item = &[CellState]> + '_ {
-        self.current.chunks_exact(self.y_max)
+        self.current.chunks_exact(self.x_max)
     }
-    pub fn replace_buffer(&mut self, new: Vec<CellState>) -> Result<(), ()> {
+    pub fn replace_buffer(&mut self, new: Vec<CellState>) -> Result<(), &'static str> {
         if new.len() != self.current.len() {
-            return Err(());
+            return Err("Can't replace Game buffer: new and old buffers are not the same length");
         }
         self.current = new;
         Ok(())
@@ -178,7 +183,13 @@ impl std::ops::Index<(usize, usize)> for Game {
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         let (x, y) = index;
 
-        assert!((0..self.x_max).contains(&x) && (0..self.y_max).contains(&y));
+        assert!(
+            (0..self.x_max).contains(&x) && (0..self.y_max).contains(&y),
+            "cell {:?} is out of bounds ({}, {})",
+            index,
+            self.x_max,
+            self.y_max
+        );
         &self.current[self.y_max * y + x]
     }
 }
@@ -186,7 +197,13 @@ impl std::ops::IndexMut<(usize, usize)> for Game {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
         let (x, y) = index;
 
-        assert!((0..self.x_max).contains(&x) && (0..self.y_max).contains(&y));
+        assert!(
+            (0..self.x_max).contains(&x) && (0..self.y_max).contains(&y),
+            "cell {:?} is out of bounds ({}, {})",
+            index,
+            self.x_max,
+            self.y_max
+        );
         &mut self.current[self.y_max * y + x]
     }
 }
@@ -199,6 +216,15 @@ impl PartialEq for Game {
             return false;
         }
         self.current == other.current
+    }
+}
+impl std::fmt::Display for Game {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{} by {} board:", self.x_max, self.y_max)?;
+        for row in self.rows() {
+            writeln!(f, "{:?}", row)?;
+        }
+        Ok(())
     }
 }
 
