@@ -218,6 +218,62 @@ fn gui_init(size: PhysicalSize<u32>) -> (Pixels, Window, EventLoop<()>) {
     (pixels, window, event_loop)
 }
 
+/// A testing function that replaces the rendering of a game of life.
+/// One swuare is 
+pub(crate) fn incrementing_render() -> ! {
+    let draw = DrawInformation {
+        screen_size: PhysicalSize::new(1202, 802),
+        cell_size: (8u32, 8u32),
+        padding: 2u32,
+    };
+    let mut game = GUIGameState::new((120, 80));
+    let mut place_holder = (0usize, 0usize);
+
+    let (mut pixels, win, l) = gui_init(draw.screen_size);
+    l.run(move |event, _, control_flow| {
+        match event {
+            Event::RedrawRequested(id) if id == win.id() => {
+                draw_board(&game.board, &mut pixels, &draw);
+                if let Err(e) = pixels.render() {
+                    eprintln!("Error rendering: {:?}", e);
+                }
+            }
+            Event::WindowEvent {
+                event: WindowEvent::KeyboardInput { input, .. },
+                window_id,
+                ..
+            } => {
+                if window_id != win.id() || input.state == ElementState::Released {
+                    return;
+                }
+
+                match input.virtual_keycode {
+                    Some(VirtualKeyCode::Escape) => *control_flow = ControlFlow::Exit,
+                    Some(VirtualKeyCode::Equals) => {
+                        game.board.clear();
+                        game.board
+                            .set(place_holder.0, place_holder.1, CellState::Alive);
+                        place_holder = if place_holder.0 + 1 >= game.board.x_max {
+                            (0, (place_holder.1 + 1) % game.board.y_max)
+                        } else {
+                            (place_holder.0 + 1, place_holder.1)
+                        };
+
+                        eprintln!("Incrementing postion! new positon: {:?}", place_holder);
+                        win.request_redraw();
+                    },
+                    _ => {},
+                };
+            },
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => *control_flow = ControlFlow::Exit,
+            _ => {},
+        }
+    });
+}
+
 fn run_gui(
     l: EventLoop<()>,
     window: Window,

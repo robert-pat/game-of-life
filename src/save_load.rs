@@ -66,13 +66,6 @@ pub fn load_board_from_file(path: &str) -> game::GameBoardOld {
     }
 }
 
-pub fn load_board_from_file_new(path: &str) -> game::Game {
-    let old_board = load_board_from_file(path);
-    let mut new = game::Game::new(old_board.x_max, old_board.y_max);
-    assert!(new.clone_from_old(&old_board).is_ok());
-    new
-}
-
 /// Converts a raw text board from conwaylife.com into internal game representation
 #[allow(unused)]
 pub fn convert_wiki_to_board(path: &str) -> game::GameBoardOld {
@@ -134,8 +127,8 @@ pub(crate) fn save_game(game: &game::Game, path: &str) -> Result<(), SaveLoadErr
     use std::io::Write as ioWrite;
 
     let mut f = std::fs::OpenOptions::new()
-        .write(true)
         .create(true)
+        .append(true)
         .open(path)
         .unwrap();
     let mut s = String::with_capacity(game.y_max * game.x_max);

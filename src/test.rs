@@ -4,11 +4,11 @@ use crate::game;
 use std::io::Write;
 
 #[cfg(test)]
+use crate::game::CellState;
+#[cfg(test)]
 use crate::save_load;
 #[cfg(test)]
 use crate::{GAME_X, GAME_Y};
-#[cfg(test)]
-use crate::game::CellState;
 
 #[test]
 pub fn file_io_test() {
@@ -124,7 +124,7 @@ fn new_board_updating() {
     let mut board = game::Game::new(10, 10);
     let cells = [(1, 1), (2, 2), (3, 3), (4, 4)];
     board.set_many(&cells, &[CellState::Alive]);
-    
+
     for _ in 0..3 {
         eprintln!("{board}");
         board.step(1);

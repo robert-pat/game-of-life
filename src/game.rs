@@ -157,6 +157,7 @@ impl Game {
             self.iterate();
         }
     }
+    #[allow(unused)]
     pub fn clone_from_old(&mut self, old: &GameBoardOld) -> Result<(), ()> {
         if self.x_max != old.x_max || self.y_max != old.y_max {
             return Err(());
